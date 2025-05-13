@@ -9,9 +9,9 @@ import Test.Html.Selector as Html
 suite : Test
 suite =
     Test.describe "Main"
-        [ Test.test "Displays the current prompt" <|
+        [ Test.test "Displays the current deck" <|
             \_ ->
                 view { prompt = "something funny" }
                     |> Query.fromHtml
-                    |> Query.has [ Html.text "something funny" ]
+                    |> Query.has [ Html.text "Black Deck" ]
         ]

@@ -1,9 +1,8 @@
 module Main exposing (Model, Msg(..), main, view)
 
 import Browser
-import Html exposing (Html, button, div, input, text)
+import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (attribute, class)
-import Html.Events exposing (onClick)
 import Random
 
 
@@ -14,7 +13,6 @@ type alias Model =
 
 type Msg
     = Next String
-    | RequestPrompt
 
 
 main : Program () Model Msg
@@ -88,9 +86,6 @@ update msg model =
         Next prompt ->
             ( { model | prompt = prompt }, Cmd.none )
 
-        RequestPrompt ->
-            ( model, random )
-
 
 random : Cmd Msg
 random =
@@ -98,7 +93,7 @@ random =
 
 
 view : Model -> Html Msg
-view model =
+view _ =
     div [ class "flex flex-col items-center gap-8 p-6 h-dvh md:mx-auto md:w-3/4 lg:w-1/3" ]
         [ tabs [ class "font-bold self-end tabs-sm" ]
             [ tab [] [ text "White Deck" ]
