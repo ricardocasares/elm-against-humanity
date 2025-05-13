@@ -1,9 +1,7 @@
 @import url("https://fonts.cdnfonts.com/css/satoshi");
 @import "tailwindcss";
 @plugin "daisyui" {
-    themes:
-        light --default,
-        forest --prefersdark;
+    themes: dracula --default;
 }
 
 @theme {
@@ -13,4 +11,16 @@
 html,
 body {
     @apply h-dvh;
+}
+
+.tabs {
+    @apply bg-secondary;
+}
+
+.tab {
+    @apply text-black;
+}
+
+.tab-active {
+    @apply bg-black text-white;
 }

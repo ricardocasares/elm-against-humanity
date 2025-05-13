@@ -1,8 +1,8 @@
 module Main exposing (Model, Msg(..), main, view)
 
 import Browser
-import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (class)
+import Html exposing (Html, button, div, input, text)
+import Html.Attributes exposing (attribute, class)
 import Html.Events exposing (onClick)
 import Random
 
@@ -98,8 +98,39 @@ random =
 
 
 view : Model -> Html Msg
-view { prompt } =
-    div [ class "flex flex-col gap-6 h-dvh container mx-auto p-8" ]
-        [ div [ class "text-5xl md:text-8xl font-bold flex-1 md:py-18 leading-16 md:leading-30" ] [ text prompt ]
-        , button [ class "btn btn-xl btn-accent self-start", onClick RequestPrompt ] [ text "Next" ]
+view model =
+    div [ class "flex flex-col items-center gap-8 p-6 h-dvh md:mx-auto md:w-3/4 lg:w-1/3" ]
+        [ tabs [ class "font-bold self-end tabs-sm" ]
+            [ tab [] [ text "White Deck" ]
+            , tab [ class "tab-active" ] [ text "Black Deck" ]
+            , tab [] [ text "Scores" ]
+            ]
+        , deck [ class "flex-1 w-full" ]
+            [ card [ class "bg-black text-white" ] [ text "Do stand-up comedy for a tough crowd of pillows." ]
+            , card [ class "bg-black text-white" ] [ text "Host a ted talk about the philosophy of rubber ducks." ]
+            , card [ class "bg-black text-white" ] [ text "Write a LinkedIn profile for your coffee mug." ]
+            ]
+        , button [ class "self-start btn btn-secondary btn-lg rounded-3xl" ] [ text "Draw New Hand" ]
         ]
+
+
+card : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+card attrs content =
+    div
+        (List.append [ class "p-6 text-5xl font-bold leading-16 w-full" ] attrs)
+        content
+
+
+deck : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+deck attrs cards =
+    div (List.append [ class "carousel carousel-vertical rounded-box shadow" ] attrs) (List.map (\c -> div [ class "carousel-item h-full" ] [ c ]) cards)
+
+
+tabs : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+tabs attrs items =
+    div (List.append [ class "tabs tabs-box" ] attrs) items
+
+
+tab : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+tab attrs label =
+    div (List.append [ attribute "role" "tab", class "tab" ] attrs) label
