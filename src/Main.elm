@@ -94,7 +94,7 @@ random =
 
 view : Model -> Html Msg
 view _ =
-    div [ class "flex flex-col items-center gap-8 p-6 h-dvh md:mx-auto md:w-3/4 lg:w-1/3" ]
+    div [ class "flex flex-col items-center gap-8 p-6 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ tabs [ class "font-bold self-end tabs-sm" ]
             [ tab [] [ text "White Deck" ]
             , tab [ class "tab-active" ] [ text "Black Deck" ]
@@ -112,7 +112,7 @@ view _ =
 card : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 card attrs content =
     div
-        (List.append [ class "p-6 text-5xl font-bold leading-16 w-full" ] attrs)
+        (List.append [ class "p-6 font-bold text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full rounded-box" ] attrs)
         content
 
 
