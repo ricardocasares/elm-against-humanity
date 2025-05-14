@@ -1,18 +1,35 @@
-module Main exposing (Model, Msg(..), main, view)
+module Main exposing (Color, Model, Msg(..), Route(..), main, view)
 
 import Browser
 import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (attribute, class)
-import Random
+import Html.Attributes exposing (attribute, class, lang)
+import Html.Events exposing (onClick)
+import Random exposing (generate)
+import Random.List exposing (shuffle)
+
+
+type Route
+    = Blacks
+    | Whites
+    | Scores
 
 
 type alias Model =
-    { prompt : String
+    { route : Route
+    , blacks : List String
+    , whites : List String
     }
 
 
+type Color
+    = Black
+
+
 type Msg
-    = Next String
+    = GenerateDeck Color
+    | GotWhite (List String)
+    | GotBlack (List String)
+    | TabClicked Route
 
 
 main : Program () Model Msg
@@ -22,97 +39,57 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { prompt = "" }, random )
-
-
-prompts : List String
-prompts =
-    [ "You're the host now. Make the rules. No one else knows."
-    , "Act happy while I ruin your day."
-    , "Charades, but the lie detector says you're wrong."
-    , "Explain quantum physics using only cat noises."
-    , "Tell a story backwards, starting with 'The End'."
-    , "Be a weather reporter for emotions instead of weather."
-    , "Describe your breakfast like it's breaking news."
-    , "Pitch a movie where vegetables are the villains."
-    , "Be a superhero whose power is making things mildly inconvenient."
-    , "Translate this conversation into dolphin sounds."
-    , "You're a GPS navigator having an existential crisis."
-    , "Sell me air from different famous locations."
-    , "Do an unboxing video of an imaginary time machine."
-    , "You're a food critic reviewing water from different taps."
-    , "Tell a dramatic story using only eyebrow movements."
-    , "Give a TED talk about your sock drawer."
-    , "Be a commentator for paint drying championships."
-    , "Interview a chair about its life story."
-    , "You're a detective solving the case of missing silence."
-    , "Teach interpretive dance to imaginary penguins."
-    , "Host a cooking show using only office supplies."
-    , "Be a tour guide in your own pocket."
-    , "Give a pep talk to a discouraged cloud."
-    , "Re-enact the birth of the universe in 30 seconds."
-    , "Review yesterday's nap like a movie critic."
-    , "Be a sportscaster for plants growing."
-    , "Pitch a reality show starring dust bunnies."
-    , "Do stand-up comedy for a tough crowd of pillows."
-    , "Conduct an orchestra of invisible musicians."
-    , "Be a marriage counselor for left and right shoes."
-    , "Write a love letter from your phone to its charger."
-    , "Host a debate between morning people and night owls."
-    , "Create a conspiracy theory about why socks disappear."
-    , "Be a mime trapped in an invisible traffic jam."
-    , "Write a LinkedIn profile for your coffee mug."
-    , "Narrate a documentary about procrastination in real-time."
-    , "Interview your future self about your past self's decisions."
-    , "Be a detective investigating who stole the Wi-Fi signal."
-    , "Organize a protest rally for neglected house plants."
-    , "Create a dating profile for your favorite book character."
-    , "Host a ted talk about the philosophy of rubber ducks."
-    , "Be a sports commentator for a snail race marathon."
-    , "Write a passive-aggressive note to gravity."
-    , "Perform an interpretive dance of your browser history."
-    , "Host a support group for abandoned shopping carts."
-    , "Give a dramatic reading of your grocery list."
-    , "Be a life coach for pessimistic rainbows."
-    , "Create a podcast for an audience of house spiders."
-    , "Write an acceptance speech for 'Most Average Person'."
-    , "Design a theme park where nothing is fun."
-    ]
+    ( { route = Blacks, blacks = [], whites = [] }, Cmd.batch [ generate GotBlack (shuffle blacks), generate GotWhite (shuffle whites) ] )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Next prompt ->
-            ( { model | prompt = prompt }, Cmd.none )
+        GotWhite a ->
+            ( { model | whites = a }, Cmd.none )
 
+        GotBlack b ->
+            ( { model | blacks = b }, Cmd.none )
 
-random : Cmd Msg
-random =
-    Random.generate Next (Random.uniform (Maybe.withDefault "" (List.head prompts)) (Maybe.withDefault [] (List.tail prompts)))
+        GenerateDeck color ->
+            case color of
+                Black ->
+                    ( model, generate GotBlack (shuffle blacks) )
+
+        TabClicked route ->
+            ( { model | route = route }, Cmd.none )
 
 
 view : Model -> Html Msg
-view _ =
+view model =
     div [ class "flex flex-col items-center gap-8 p-6 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ tabs [ class "font-bold self-end tabs-sm" ]
-            [ tab [] [ text "White Deck" ]
-            , tab [ class "tab-active" ] [ text "Black Deck" ]
-            , tab [] [ text "Scores" ]
+            [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Scores" ]
+            , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "White Cards" ]
+            , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Black Cards" ]
             ]
-        , deck [ class "flex-1 w-full" ]
-            [ card [ class "bg-black text-white" ] [ text "Do stand-up comedy for a tough crowd of ______." ]
-            , card [ class "bg-black text-white" ] [ text "Host a ted talk about the _______ of dogs." ]
-            , card [ class "bg-black text-white" ] [ text "Write a _______ profile for your coffee mug." ]
-            ]
-        , button [ class "self-start btn btn-secondary btn-lg rounded-3xl" ] [ text "Draw New Hand" ]
+        , screen model
+        , button [ class "self-start btn btn-secondary btn-lg rounded-3xl", onClick (GenerateDeck Black) ] [ text "Draw New Hand" ]
         ]
+
+
+screen : Model -> Html msg
+screen model =
+    case model.route of
+        Whites ->
+            deck [ class "flex-1 w-full" ] (List.map (\c -> card [ class "bg-white text-black" ] [ text c ]) model.whites)
+
+        Blacks ->
+            deck [ class "flex-1 w-full" ] (List.map (\c -> card [ class "bg-black text-white" ] [ text c ]) model.blacks)
+
+        Scores ->
+            div [ class "bg-base-300 rounded-box flex-1 w-full text-4xl font-bold p-4 flex items-center justify-center" ] [ text "Working on it" ]
 
 
 card : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 card attrs content =
     div
-        (List.append [ class "p-6 font-bold text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full" ] attrs)
+        (List.append [ class "p-6 font-bold text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto", lang "en" ] attrs)
         content
 
 
@@ -128,4 +105,105 @@ tabs attrs items =
 
 tab : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 tab attrs label =
-    div (List.append [ attribute "role" "tab", class "tab" ] attrs) label
+    button (List.append [ attribute "role" "tab", class "tab" ] attrs) label
+
+
+active : Route -> Route -> Html.Attribute msg
+active a b =
+    class
+        (if a == b then
+            "tab-active"
+
+         else
+            ""
+        )
+
+
+blacks : List String
+blacks =
+    [ "Why can't I sleep at night?"
+    , "I got 99 problems but _______ ain't one."
+    , "What's a girl's best friend?"
+    , "What's that smell?"
+    , "This is the way the world ends: not with a bang but with _______."
+    , "What is Batman's guilty pleasure?"
+    , "I'm sorry, Professor, but I couldn't complete my homework because of _______."
+    , "What ended my last relationship?"
+    , "What's that sound?"
+    , "I drink to forget _______."
+    , "What's the next Happy Meal® toy?"
+    , "Here is the church, here is the steeple, open the doors, and there is _______."
+    , "It's a pity that kids these days are all getting involved with _______."
+    , "During sex, I like to think about _______."
+    , "What's the most emo?"
+    , "Instead of coal, Santa now gives bad children _______."
+    , "What's the new fad diet?"
+    , "When I am a billionaire, I shall erect a 50-foot statue to commemorate _______."
+    , "What's the worst thing to say during a job interview?"
+    , "What’s my secret power?"
+    , "What gets better with age?"
+    , "What's there a ton of in heaven?"
+    , "Major League Baseball has banned _______ for giving players an unfair advantage."
+    , "My mom freaked out when she found _______ in my browser history."
+    , "What's the most problematic?"
+    , "What never fails to liven up the party?"
+    , "The class field trip was completely ruined by _______."
+    , "When I was tripping on acid, _______ turned into _______."
+    , "What would grandma find disturbing, yet oddly charming?"
+    , "What did I bring back from Mexico?"
+    , "What helps Obama unwind?"
+    , "What did Vin Diesel eat for dinner?"
+    , "Why am I sticky?"
+    , "What will always get you laid?"
+    , "What did I nickname my genitals?"
+    , "What makes life worth living?"
+    , "I never truly understood _______ until I encountered _______."
+    , "How did I lose my virginity?"
+    , "What's the next superhero / sidekick duo?"
+    , "What’s fun until it gets weird?"
+    ]
+
+
+whites : List String
+whites =
+    [ "A windmill full of corpses"
+    , "The entire Internet"
+    , "An endless stream of diarrhea"
+    , "Former President George W. Bush"
+    , "A really cool hat"
+    , "The screams... the terrible screams"
+    , "A pyramid of severed heads"
+    , "A mime having a stroke"
+    , "The miracle of childbirth"
+    , "A subscription to Men's Fitness"
+    , "Bees?"
+    , "Passive-aggressive Post-it notes"
+    , "Waking up half-naked in a Denny's parking lot"
+    , "My soul"
+    , "An honest cop with nothing left to lose"
+    , "The blood of Christ"
+    , "Getting married, having a few kids, buying some stuff, retiring to Florida, and dying"
+    , "A disappointing birthday party"
+    , "An oversized lollipop"
+    , "Flesh-eating bacteria"
+    , "Doing the right thing"
+    , "Poor life choices"
+    , "A man on the brink of orgasm"
+    , "The Big Bang"
+    , "An army of skeletons"
+    , "Chainsaws for hands"
+    , "A lifetime of sadness"
+    , "The invisible hand of the market"
+    , "A stray pube"
+    , "A surprising amount of hair"
+    , "An erection that lasts longer than four hours"
+    , "A tiny horse"
+    , "A foul mouth"
+    , "Gloryholes"
+    , "A brain tumor"
+    , "Tentacle porn"
+    , "Friendly fire"
+    , "Hope"
+    , "Being rich"
+    , "A gentle caress of the inner thigh"
+    ]
