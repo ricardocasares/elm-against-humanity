@@ -98,7 +98,7 @@ deckDecoder =
 getDeck : Cmd Msg
 getDeck =
     Http.get
-        { url = "/deck.json"
+        { url = "/elm-against-humanity/deck.json"
         , expect = Http.expectJson GotDeck deckDecoder
         }
 
