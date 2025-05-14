@@ -1,10 +1,14 @@
-module Main exposing (Model, Msg(..), Route(..), main, view)
+module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), main, view)
 
 import Browser
-import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (attribute, class, disabled, lang)
-import Html.Events exposing (onClick)
-import ZipList exposing (ZipList(..), backward, forward)
+import Html exposing (Html, button, div, input, text)
+import Html.Attributes exposing (attribute, class, disabled, lang, type_, value)
+import Html.Events exposing (onClick, onInput)
+import Http
+import Json.Decode as Decode exposing (Decoder)
+import Random
+import Random.List
+import ZipList as Zip
 
 
 type Route
@@ -13,11 +17,45 @@ type Route
     | Scores
 
 
+type alias Deck =
+    { blacks : List String
+    , whites : List String
+    }
+
+
+type DeckState
+    = Loading
+    | ShufflingCards
+    | Loaded
+    | Failed String
+
+
+type alias Player =
+    { id : Int
+    , score : Int
+    , color : String
+    }
+
+
 type alias Model =
     { route : Route
-    , blacks : ZipList String
-    , whites : ZipList String
+    , state : DeckState
+    , originalDeck : Maybe Deck
+    , blacks : Maybe (Zip.ZipList String)
+    , whites : Maybe (Zip.ZipList String)
+    , players : List Player
+    , nextPlayerId : Int
     }
+
+
+listToZipList : List a -> Maybe (Zip.ZipList a)
+listToZipList list =
+    case list of
+        head :: tail ->
+            Just (Zip.new head tail)
+
+        [] ->
+            Nothing
 
 
 type Msg
@@ -26,6 +64,43 @@ type Msg
     | PrevBlack
     | NextWhite
     | PrevWhite
+    | GotDeck (Result Http.Error Deck)
+    | ShuffledCards (List String) (List String)
+    | Reshuffle
+    | AddPlayer
+    | RemovePlayer Int
+    | UpdatePlayerScore Int String
+    | ResetScores
+
+
+playerColors : List String
+playerColors =
+    [ "bg-red-500"
+    , "bg-blue-500"
+    , "bg-green-500"
+    , "bg-yellow-500"
+    , "bg-purple-500"
+    , "bg-pink-500"
+    , "bg-indigo-500"
+    , "bg-orange-500"
+    , "bg-teal-500"
+    , "bg-cyan-500"
+    ]
+
+
+deckDecoder : Decoder Deck
+deckDecoder =
+    Decode.map2 Deck
+        (Decode.field "black" (Decode.list Decode.string))
+        (Decode.field "white" (Decode.list Decode.string))
+
+
+getDeck : Cmd Msg
+getDeck =
+    Http.get
+        { url = "/deck.json"
+        , expect = Http.expectJson GotDeck deckDecoder
+        }
 
 
 main : Program () Model Msg
@@ -35,7 +110,25 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { route = Blacks, blacks = blacks, whites = whites }, Cmd.none )
+    ( { route = Blacks
+      , state = Loading
+      , originalDeck = Nothing
+      , blacks = Nothing
+      , whites = Nothing
+      , players =
+            [ { id = 1
+              , score = 0
+              , color = "bg-red-500"
+              }
+            , { id = 2
+              , score = 0
+              , color = "bg-blue-500"
+              }
+            ]
+      , nextPlayerId = 3
+      }
+    , getDeck
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -45,27 +138,172 @@ update msg model =
             ( { model | route = route }, Cmd.none )
 
         NextBlack ->
-            ( { model | blacks = forward model.blacks }, Cmd.none )
+            ( { model | blacks = Maybe.map Zip.forward model.blacks }, Cmd.none )
 
         PrevBlack ->
-            ( { model | blacks = backward model.blacks }, Cmd.none )
+            ( { model | blacks = Maybe.map Zip.backward model.blacks }, Cmd.none )
 
         NextWhite ->
-            ( { model | whites = forward model.whites }, Cmd.none )
+            ( { model | whites = Maybe.map Zip.forward model.whites }, Cmd.none )
 
         PrevWhite ->
-            ( { model | whites = backward model.whites }, Cmd.none )
+            ( { model | whites = Maybe.map Zip.backward model.whites }, Cmd.none )
+
+        GotDeck result ->
+            case result of
+                Ok loadedDeck ->
+                    ( { model
+                        | state = ShufflingCards
+                        , originalDeck = Just loadedDeck
+                      }
+                    , Random.generate
+                        (\( blacks, whites ) -> ShuffledCards blacks whites)
+                        (Random.map2 Tuple.pair
+                            (Random.List.shuffle loadedDeck.blacks |> Random.map (List.take 10))
+                            (Random.List.shuffle loadedDeck.whites |> Random.map (List.take 10))
+                        )
+                    )
+
+                Err _ ->
+                    ( { model | state = Failed "Failed to load deck" }
+                    , Cmd.none
+                    )
+
+        ShuffledCards blacks whites ->
+            ( { model
+                | state = Loaded
+                , blacks = listToZipList blacks
+                , whites = listToZipList whites
+              }
+            , Cmd.none
+            )
+
+        Reshuffle ->
+            case model.originalDeck of
+                Just originalDeck ->
+                    ( { model | state = ShufflingCards }
+                    , Random.generate
+                        (\( blacks, whites ) -> ShuffledCards blacks whites)
+                        (Random.map2 Tuple.pair
+                            (Random.List.shuffle originalDeck.blacks |> Random.map (List.take 10))
+                            (Random.List.shuffle originalDeck.whites |> Random.map (List.take 10))
+                        )
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        AddPlayer ->
+            let
+                colorIndex : Int
+                colorIndex =
+                    modBy (List.length playerColors) (List.length model.players)
+
+                color : String
+                color =
+                    Maybe.withDefault "bg-gray-500" (List.head (List.drop colorIndex playerColors))
+
+                newPlayer : { id : Int, score : number, color : String }
+                newPlayer =
+                    { id = model.nextPlayerId
+                    , score = 0
+                    , color = color
+                    }
+            in
+            ( { model
+                | players = model.players ++ [ newPlayer ]
+                , nextPlayerId = model.nextPlayerId + 1
+              }
+            , Cmd.none
+            )
+
+        RemovePlayer id ->
+            if List.length model.players <= 2 then
+                ( model, Cmd.none )
+
+            else
+                ( { model
+                    | players = List.filter (\p -> p.id /= id) model.players
+                  }
+                , Cmd.none
+                )
+
+        UpdatePlayerScore id scoreStr ->
+            ( { model
+                | players =
+                    List.map
+                        (\p ->
+                            if p.id == id then
+                                { p | score = Maybe.withDefault p.score (String.toInt scoreStr) }
+
+                            else
+                                p
+                        )
+                        model.players
+              }
+            , Cmd.none
+            )
+
+        ResetScores ->
+            ( { model
+                | players = List.map (\p -> { p | score = 0 }) model.players
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
 view model =
     div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
-        [ tabs [ class "font-bold self-end tabs-sm" ]
-            [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Scores" ]
-            , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "White Cards" ]
-            , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Black Cards" ]
+        [ div [ class "w-full flex justify-between items-center" ]
+            [ button
+                [ class "btn btn-accent btn-sm"
+                , onClick Reshuffle
+                , disabled
+                    (case model.state of
+                        Loading ->
+                            True
+
+                        ShufflingCards ->
+                            True
+
+                        _ ->
+                            False
+                    )
+                ]
+                [ text "Shuffle" ]
+            , tabs [ class "font-bold tabs-xs" ]
+                [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Scores" ]
+                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "White Cards" ]
+                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Black Cards" ]
+                ]
             ]
-        , screen model
+        , case model.state of
+            Loading ->
+                card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-4" ]
+                    [ div [ class "skeleton h-4 w-full" ] []
+                    , div [ class "skeleton h-4 w-full" ] []
+                    , div [ class "skeleton h-4 w-full" ] []
+                    , div [ class "skeleton h-4 w-full" ] []
+                    , div [ class "skeleton h-4 w-32" ] []
+                    ]
+
+            ShufflingCards ->
+                card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-4" ]
+                    [ div [ class "skeleton h-4 w-full animate-pulse" ] []
+                    , div [ class "skeleton h-4 w-full animate-pulse" ] []
+                    , div [ class "skeleton h-4 w-full animate-pulse" ] []
+                    , div [ class "skeleton h-4 w-full animate-pulse" ] []
+                    , div [ class "skeleton h-4 w-32 animate-pulse" ] []
+                    ]
+
+            Failed error ->
+                card [ class "bg-error rounded-box flex-1 w-full flex flex-col gap-4" ]
+                    [ text error
+                    ]
+
+            Loaded ->
+                screen model
         ]
 
 
@@ -73,33 +311,89 @@ screen : Model -> Html Msg
 screen model =
     case model.route of
         Whites ->
-            screen_whites model.whites
+            case model.whites of
+                Just whites ->
+                    screen_whites whites
+
+                Nothing ->
+                    div [] [ text "No white cards loaded" ]
 
         Blacks ->
-            screen_blacks model.blacks
+            case model.blacks of
+                Just blacks ->
+                    screen_blacks blacks
+
+                Nothing ->
+                    div [] [ text "No black cards loaded" ]
 
         Scores ->
-            div [ class "bg-base-300 rounded-box flex-1 w-full text-4xl font-bold p-4 flex items-center justify-center" ] [ text "Working on it" ]
+            div [ class "flex flex-col gap-4 flex-1" ]
+                [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col gap-6" ]
+                    [ div [ class "flex flex-col gap-6" ]
+                        (List.map
+                            (\player ->
+                                div [ class "flex items-center gap-6" ]
+                                    [ div [ class ("w-10 h-10 rounded-full shadow-inner " ++ player.color) ] []
+                                    , div [ class "flex-1" ]
+                                        [ input
+                                            [ type_ "range"
+                                            , class "range range-primary w-full"
+                                            , Html.Attributes.min "0"
+                                            , Html.Attributes.max "10"
+                                            , value (String.fromInt player.score)
+                                            , onInput (UpdatePlayerScore player.id)
+                                            ]
+                                            []
+                                        ]
+                                    , div [ class "text-2xl font-bold min-w-[2ch] text-center" ] [ text (String.fromInt player.score) ]
+                                    , button
+                                        [ class "btn btn-sm btn-error btn-circle"
+                                        , onClick (RemovePlayer player.id)
+                                        , disabled (List.length model.players <= 2)
+                                        ]
+                                        [ text "×" ]
+                                    ]
+                            )
+                            model.players
+                        )
+                    ]
+                , div [ class "w-full flex justify-between gap-4" ]
+                    [ button
+                        [ class "btn btn-warning btn-sm"
+                        , onClick ResetScores
+                        ]
+                        [ text "Reset Scores" ]
+                    , if List.length model.players < 10 then
+                        button
+                            [ class "btn btn-sm btn-primary gap-2 self-center"
+                            , onClick AddPlayer
+                            ]
+                            [ text "Add Player", text "+" ]
+
+                      else
+                        text ""
+                    ]
+                ]
 
 
-screen_whites : ZipList String -> Html Msg
-screen_whites (Zipper prev curr next) =
+screen_whites : Zip.ZipList String -> Html Msg
+screen_whites (Zip.Zipper prev curr next) =
     div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-white text-black" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-secondary btn rounded-3xl", onClick PrevWhite, enabled prev ] [ text "Prev" ]
-            , button [ class "self-start btn btn-secondary btn rounded-3xl", onClick NextWhite, enabled next ] [ text "Next" ]
+            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevWhite, enabled prev ] [ text "Prev" ]
+            , button [ class "self-start btn btn-sm btn-secondary", onClick NextWhite, enabled next ] [ text "Next" ]
             ]
         ]
 
 
-screen_blacks : ZipList String -> Html Msg
-screen_blacks (Zipper prev curr next) =
+screen_blacks : Zip.ZipList String -> Html Msg
+screen_blacks (Zip.Zipper prev curr next) =
     div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-black text-white" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-secondary btn rounded-3xl", onClick PrevBlack, enabled prev ] [ text "Prev" ]
-            , button [ class "self-start btn btn-secondary btn rounded-3xl", onClick NextBlack, enabled next ] [ text "Next" ]
+            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevBlack, enabled prev ] [ text "Prev" ]
+            , button [ class "self-start btn btn-sm btn-secondary", onClick NextBlack, enabled next ] [ text "Next" ]
             ]
         ]
 
@@ -128,7 +422,7 @@ deck attrs cards =
 
 tabs : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 tabs attrs items =
-    div (List.append [ class "tabs tabs-box" ] attrs) items
+    div (List.append [ class "tabs tabs-box rounded-lg" ] attrs) items
 
 
 tab : List (Html.Attribute msg) -> List (Html msg) -> Html msg
@@ -145,93 +439,3 @@ active a b =
          else
             ""
         )
-
-
-blacks : ZipList String
-blacks =
-    ZipList.new "Why can't I sleep at night?"
-        [ "I got 99 problems but _______ ain't one."
-        , "What's a girl's best friend?"
-        , "What's that smell?"
-        , "This is the way the world ends: not with a bang but with _______."
-        , "What is Batman's guilty pleasure?"
-        , "I'm sorry, Professor, but I couldn't complete my homework because of _______."
-        , "What ended my last relationship?"
-        , "What's that sound?"
-        , "I drink to forget _______."
-        , "What's the next Happy Meal® toy?"
-        , "Here is the church, here is the steeple, open the doors, and there is _______."
-        , "It's a pity that kids these days are all getting involved with _______."
-        , "During sex, I like to think about _______."
-        , "What's the most emo?"
-        , "Instead of coal, Santa now gives bad children _______."
-        , "What's the new fad diet?"
-        , "When I am a billionaire, I shall erect a 50-foot statue to commemorate _______."
-        , "What's the worst thing to say during a job interview?"
-        , "What’s my secret power?"
-        , "What gets better with age?"
-        , "What's there a ton of in heaven?"
-        , "Major League Baseball has banned _______ for giving players an unfair advantage."
-        , "My mom freaked out when she found _______ in my browser history."
-        , "What's the most problematic?"
-        , "What never fails to liven up the party?"
-        , "The class field trip was completely ruined by _______."
-        , "When I was tripping on acid, _______ turned into _______."
-        , "What would grandma find disturbing, yet oddly charming?"
-        , "What did I bring back from Mexico?"
-        , "What helps Obama unwind?"
-        , "What did Vin Diesel eat for dinner?"
-        , "Why am I sticky?"
-        , "What will always get you laid?"
-        , "What did I nickname my genitals?"
-        , "What makes life worth living?"
-        , "I never truly understood _______ until I encountered _______."
-        , "How did I lose my virginity?"
-        , "What's the next superhero/sidekick duo?"
-        , "What’s fun until it gets weird?"
-        ]
-
-
-whites : ZipList String
-whites =
-    ZipList.new "A windmill full of corpses"
-        [ "The entire Internet"
-        , "An endless stream of diarrhea"
-        , "Former President George W. Bush"
-        , "A really cool hat"
-        , "The screams... the terrible screams"
-        , "A pyramid of severed heads"
-        , "A mime having a stroke"
-        , "The miracle of childbirth"
-        , "A subscription to Men's Fitness"
-        , "Bees?"
-        , "Passive-aggressive Post-it notes"
-        , "Waking up half-naked in a Denny's parking lot"
-        , "My soul"
-        , "An honest cop with nothing left to lose"
-        , "The blood of Christ"
-        , "Getting married, having a few kids, buying some stuff, retiring to Florida, and dying"
-        , "A disappointing birthday party"
-        , "An oversized lollipop"
-        , "Flesh-eating bacteria"
-        , "Doing the right thing"
-        , "Poor life choices"
-        , "A man on the brink of orgasm"
-        , "The Big Bang"
-        , "An army of skeletons"
-        , "Chainsaws for hands"
-        , "A lifetime of sadness"
-        , "The invisible hand of the market"
-        , "A stray pube"
-        , "A surprising amount of hair"
-        , "An erection that lasts longer than four hours"
-        , "A tiny horse"
-        , "A foul mouth"
-        , "Gloryholes"
-        , "A brain tumor"
-        , "Tentacle porn"
-        , "Friendly fire"
-        , "Hope"
-        , "Being rich"
-        , "A gentle caress of the inner thigh"
-        ]
