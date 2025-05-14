@@ -59,7 +59,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "flex flex-col items-center gap-2 p-2 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
+    div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ tabs [ class "font-bold self-end tabs-sm" ]
             [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Scores" ]
             , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "White Cards" ]
