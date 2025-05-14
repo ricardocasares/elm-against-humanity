@@ -59,7 +59,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "flex flex-col items-center gap-8 p-6 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
+    div [ class "flex flex-col items-center gap-2 p-2 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ tabs [ class "font-bold self-end tabs-sm" ]
             [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Scores" ]
             , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "White Cards" ]
@@ -84,7 +84,7 @@ screen model =
 
 screen_whites : ZipList String -> Html Msg
 screen_whites (Zipper prev curr next) =
-    div [ class "flex flex-col w-full gap-6 flex-1" ]
+    div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-white text-black" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
             [ button [ class "self-start btn btn-secondary btn rounded-3xl", onClick PrevWhite, enabled prev ] [ text "Prev" ]
@@ -95,7 +95,7 @@ screen_whites (Zipper prev curr next) =
 
 screen_blacks : ZipList String -> Html Msg
 screen_blacks (Zipper prev curr next) =
-    div [ class "flex flex-col w-full gap-6 flex-1" ]
+    div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-black text-white" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
             [ button [ class "self-start btn btn-secondary btn rounded-3xl", onClick PrevBlack, enabled prev ] [ text "Prev" ]
