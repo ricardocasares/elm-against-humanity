@@ -87,8 +87,8 @@ screen_whites (Zipper prev curr next) =
     div [ class "flex flex-col w-full gap-6 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-white text-black" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-secondary btn-lg rounded-3xl", onClick PrevWhite, enabled prev ] [ text "Prev" ]
-            , button [ class "self-start btn btn-secondary btn-lg rounded-3xl", onClick NextWhite, enabled next ] [ text "Next" ]
+            [ button [ class "self-start btn btn-secondary btn rounded-3xl", onClick PrevWhite, enabled prev ] [ text "Prev" ]
+            , button [ class "self-start btn btn-secondary btn rounded-3xl", onClick NextWhite, enabled next ] [ text "Next" ]
             ]
         ]
 
@@ -98,8 +98,8 @@ screen_blacks (Zipper prev curr next) =
     div [ class "flex flex-col w-full gap-6 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-black text-white" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-secondary btn-lg rounded-3xl", onClick PrevBlack, enabled prev ] [ text "Prev" ]
-            , button [ class "self-start btn btn-secondary btn-lg rounded-3xl", onClick NextBlack, enabled next ] [ text "Next" ]
+            [ button [ class "self-start btn btn-secondary btn rounded-3xl", onClick PrevBlack, enabled prev ] [ text "Prev" ]
+            , button [ class "self-start btn btn-secondary btn rounded-3xl", onClick NextBlack, enabled next ] [ text "Next" ]
             ]
         ]
 
