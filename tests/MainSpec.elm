@@ -4,6 +4,7 @@ import Main exposing (Route(..), view)
 import Test exposing (Test)
 import Test.Html.Query as Query
 import Test.Html.Selector as Html
+import ZipList as Zip
 
 
 suite : Test
@@ -11,7 +12,7 @@ suite =
     Test.describe "Main"
         [ Test.test "Displays the current deck" <|
             \_ ->
-                view { route = Blacks, blacks = [ "A black card" ], whites = [] }
+                view { route = Blacks, blacks = Zip.new "A black card" [], whites = Zip.new "" [] }
                     |> Query.fromHtml
                     |> Query.has [ Html.text "A black card" ]
         ]
