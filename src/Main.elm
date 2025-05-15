@@ -327,13 +327,13 @@ screen model =
                     div [] [ text "No black cards loaded" ]
 
         Scores ->
-            div [ class "flex flex-col gap-4 flex-1" ]
-                [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col gap-6" ]
-                    [ div [ class "flex flex-col gap-6" ]
+            div [ class "flex flex-col gap-2 flex-1 w-full" ]
+                [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
+                    [ div [ class "flex flex-col gap-4" ]
                         (List.map
                             (\player ->
-                                div [ class "flex items-center gap-6" ]
-                                    [ div [ class ("w-10 h-10 rounded-full shadow-inner " ++ player.color) ] []
+                                div [ class "flex items-center gap-4" ]
+                                    [ div [ class ("w-8 h-8 rounded-full shadow-inner " ++ player.color) ] []
                                     , div [ class "flex-1" ]
                                         [ input
                                             [ type_ "range"
@@ -363,15 +363,16 @@ screen model =
                         , onClick ResetScores
                         ]
                         [ text "Reset Scores" ]
-                    , if List.length model.players < 10 then
-                        button
-                            [ class "btn btn-sm btn-primary gap-2 self-center"
-                            , onClick AddPlayer
-                            ]
-                            [ text "Add Player", text "+" ]
+                    , button
+                        [ class "btn btn-sm btn-primary gap-2 self-center"
+                        , onClick AddPlayer
+                        , if List.length model.players < 10 then
+                            disabled False
 
-                      else
-                        text ""
+                          else
+                            disabled True
+                        ]
+                        [ text "Add Player" ]
                     ]
                 ]
 
