@@ -165,7 +165,7 @@ update msg model =
                     )
 
                 Err _ ->
-                    ( { model | state = Failed "Failed to load deck" }
+                    ( { model | state = Failed "No se pudo cargar el mazo" }
                     , Cmd.none
                     )
 
@@ -271,11 +271,11 @@ view model =
                             False
                     )
                 ]
-                [ text "Shuffle" ]
+                [ text "Barajar" ]
             , tabs [ class "font-bold tabs-xs" ]
-                [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Scores" ]
-                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "White Cards" ]
-                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Black Cards" ]
+                [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Puntos" ]
+                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "Cartas Blancas" ]
+                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Cartas Negras" ]
                 ]
             ]
         , case model.state of
@@ -299,8 +299,7 @@ view model =
 
             Failed error ->
                 card [ class "bg-error rounded-box flex-1 w-full flex flex-col gap-4" ]
-                    [ text error
-                    ]
+                    [ text ("Error: " ++ error) ]
 
             Loaded ->
                 screen model
@@ -316,7 +315,7 @@ screen model =
                     screen_whites whites
 
                 Nothing ->
-                    div [] [ text "No white cards loaded" ]
+                    div [] [ text "No se cargaron cartas blancas" ]
 
         Blacks ->
             case model.blacks of
@@ -324,7 +323,7 @@ screen model =
                     screen_blacks blacks
 
                 Nothing ->
-                    div [] [ text "No black cards loaded" ]
+                    div [] [ text "No se cargaron cartas negras" ]
 
         Scores ->
             div [ class "flex flex-col gap-2 flex-1 w-full" ]
@@ -362,7 +361,7 @@ screen model =
                         [ class "btn btn-warning btn-sm"
                         , onClick ResetScores
                         ]
-                        [ text "Reset Scores" ]
+                        [ text "Reiniciar" ]
                     , button
                         [ class "btn btn-sm btn-primary gap-2 self-center"
                         , onClick AddPlayer
@@ -372,7 +371,7 @@ screen model =
                           else
                             disabled True
                         ]
-                        [ text "Add Player" ]
+                        [ text "Agregar Jugador" ]
                     ]
                 ]
 
@@ -382,8 +381,8 @@ screen_whites (Zip.Zipper prev curr next) =
     div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-white text-black" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevWhite, enabled prev ] [ text "Prev" ]
-            , button [ class "self-start btn btn-sm btn-secondary", onClick NextWhite, enabled next ] [ text "Next" ]
+            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevWhite, enabled prev ] [ text "Anterior" ]
+            , button [ class "self-start btn btn-sm btn-secondary", onClick NextWhite, enabled next ] [ text "Siguiente" ]
             ]
         ]
 
@@ -393,8 +392,8 @@ screen_blacks (Zip.Zipper prev curr next) =
     div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-black text-white" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevBlack, enabled prev ] [ text "Prev" ]
-            , button [ class "self-start btn btn-sm btn-secondary", onClick NextBlack, enabled next ] [ text "Next" ]
+            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevBlack, enabled prev ] [ text "Anterior" ]
+            , button [ class "self-start btn btn-sm btn-secondary", onClick NextBlack, enabled next ] [ text "Siguiente" ]
             ]
         ]
 

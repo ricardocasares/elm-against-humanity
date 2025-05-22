@@ -79,5 +79,5 @@ suite =
                             ]
                     }
                     |> Query.fromHtml
-                    |> Query.has [ text "Reset Scores" ]
+                    |> Query.has [ text "Reiniciar" ]
         ]
