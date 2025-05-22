@@ -159,8 +159,8 @@ update msg model =
                     , Random.generate
                         (\( blacks, whites ) -> ShuffledCards blacks whites)
                         (Random.map2 Tuple.pair
-                            (Random.List.shuffle loadedDeck.blacks |> Random.map (List.take 10))
-                            (Random.List.shuffle loadedDeck.whites |> Random.map (List.take 10))
+                            (Random.List.shuffle loadedDeck.blacks |> Random.map (List.take 40))
+                            (Random.List.shuffle loadedDeck.whites |> Random.map (List.take 40))
                         )
                     )
 
@@ -185,8 +185,8 @@ update msg model =
                     , Random.generate
                         (\( blacks, whites ) -> ShuffledCards blacks whites)
                         (Random.map2 Tuple.pair
-                            (Random.List.shuffle originalDeck.blacks |> Random.map (List.take 10))
-                            (Random.List.shuffle originalDeck.whites |> Random.map (List.take 10))
+                            (Random.List.shuffle originalDeck.blacks |> Random.map (List.take 40))
+                            (Random.List.shuffle originalDeck.whites |> Random.map (List.take 40))
                         )
                     )
 
