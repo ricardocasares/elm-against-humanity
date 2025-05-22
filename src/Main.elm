@@ -371,7 +371,7 @@ screen model =
                           else
                             disabled True
                         ]
-                        [ text "Agregar Jugador" ]
+                        [ text "Agregar" ]
                     ]
                 ]
 
