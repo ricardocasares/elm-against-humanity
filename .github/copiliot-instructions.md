@@ -17,6 +17,7 @@ This codebase uses Elm, a pure functional language.
 - Keep the `update` function clean and readable
 - Keep indentation low by using ELm's pipeline operator |>
 - Always use TypeScript for type-safety interop with Elm
+- When working on new features, write a markdown RFC first in the `./rfc` folder
 
 ## Commit messages
 
