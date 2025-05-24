@@ -11,6 +11,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Phosphor as I
 import Random
 import Random.List
+import Translations exposing (Language(..), getTranslations, languageFromString, languageToString)
 import ZipList as Zip
 
 
@@ -50,6 +51,7 @@ type alias Model =
     , players : List Player
     , nextPlayerId : Int
     , wakeLockStatus : WakeLockStatus
+    , currentLanguage : Language
     }
 
 
@@ -89,6 +91,8 @@ type Msg
     | WakeLockAvailable
     | WakeLockReleased
     | WakeLockError String
+    | LanguageDetected String
+    | LanguageChanged Language
     | NoOp
 
 
@@ -114,10 +118,23 @@ deckDecoder =
         (Decode.field "white" (Decode.list Decode.string))
 
 
-getDeck : Cmd Msg
-getDeck =
+getDeck : Language -> Cmd Msg
+getDeck language =
+    let
+        deckFile : String
+        deckFile =
+            case language of
+                English ->
+                    "deck-en.json"
+
+                Spanish ->
+                    "deck-es.json"
+
+                Polish ->
+                    "deck-pl.json"
+    in
     Http.get
-        { url = "/elm-against-humanity/deck.json"
+        { url = "/elm-against-humanity/" ++ deckFile
         , expect = Http.expectJson GotDeck deckDecoder
         }
 
@@ -152,6 +169,9 @@ subscriptions _ =
                             IO.WakeLockError error ->
                                 WakeLockError error
 
+                            IO.LanguageDetected language ->
+                                LanguageDetected language
+
                     Err _ ->
                         NoOp
             )
@@ -176,8 +196,9 @@ init _ =
             ]
       , nextPlayerId = 3
       , wakeLockStatus = WakeLockUnknown
+      , currentLanguage = Spanish
       }
-    , Cmd.batch [ getDeck, IO.fromElm IO.WakeLockCheck ]
+    , Cmd.batch [ IO.fromElm IO.DetectLanguage, IO.fromElm IO.WakeLockCheck ]
     )
 
 
@@ -206,6 +227,31 @@ update msg model =
 
         WakeLockError error ->
             ( { model | wakeLockStatus = WakeLockFailed error }, Cmd.none )
+
+        LanguageDetected languageString ->
+            let
+                detectedLanguage : Language
+                detectedLanguage =
+                    languageFromString languageString
+
+                newModel : Model
+                newModel =
+                    { model | currentLanguage = detectedLanguage }
+            in
+            ( { newModel | state = Loading }, getDeck detectedLanguage )
+
+        LanguageChanged language ->
+            let
+                newModel : Model
+                newModel =
+                    { model | currentLanguage = language }
+            in
+            ( { newModel | state = Loading }
+            , Cmd.batch
+                [ getDeck language
+                , IO.fromElm (IO.SaveLanguagePreference (languageToString language))
+                ]
+            )
 
         TabClicked route ->
             ( { model | route = route }, Cmd.none )
@@ -238,7 +284,7 @@ update msg model =
                     )
 
                 Err _ ->
-                    ( { model | state = Failed "No se pudo cargar el mazo" }
+                    ( { model | state = Failed (getTranslations model.currentLanguage).error }
                     , Cmd.none
                     )
 
@@ -261,7 +307,7 @@ update msg model =
                 color =
                     Maybe.withDefault "bg-gray-500" (List.head (List.drop colorIndex playerColors))
 
-                newPlayer : { id : Int, score : number, color : String }
+                newPlayer : Player
                 newPlayer =
                     { id = model.nextPlayerId
                     , score = 0
@@ -310,41 +356,86 @@ update msg model =
             )
 
 
+{-| Helper function to render loading states for card screens (Blacks/Whites)
+-}
+renderCardScreen : DeckState -> Html Msg -> Html Msg
+renderCardScreen state loadedContent =
+    case state of
+        Loading ->
+            loadingSkeleton
+
+        ShufflingCards ->
+            loadingSkeleton
+
+        Failed error ->
+            errorCard error
+
+        Loaded ->
+            loadedContent
+
+
+{-| Skeleton loading screen
+-}
+loadingSkeleton : Html Msg
+loadingSkeleton =
+    card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-4" ]
+        [ div [ class "skeleton h-4 w-full" ] []
+        , div [ class "skeleton h-4 w-full" ] []
+        , div [ class "skeleton h-4 w-full" ] []
+        , div [ class "skeleton h-4 w-full" ] []
+        , div [ class "skeleton h-4 w-32" ] []
+        ]
+
+
+{-| Error card display
+-}
+errorCard : String -> Html Msg
+errorCard error =
+    card [ class "bg-error rounded-box flex-1 w-full flex flex-col gap-4" ]
+        [ text ("Error: " ++ error) ]
+
+
 view : Model -> Html Msg
 view model =
+    let
+        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
+        t =
+            getTranslations model.currentLanguage
+    in
     div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ div [ class "w-full flex items-center justify-end" ]
             [ tabs [ class "font-bold tabs-sm" ]
                 [ tab [ active model.route Settings, onClick (TabClicked Settings) ] [ I.wrench I.Regular |> I.toHtml [] ]
-                , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Puntos" ]
-                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "Cartas Blancas" ]
-                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Cartas Negras" ]
+                , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text t.scores ]
+                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text t.whiteCards ]
+                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text t.blackCards ]
                 ]
             ]
-        , case model.state of
-            Loading ->
-                card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-4" ]
-                    [ div [ class "skeleton h-4 w-full" ] []
-                    , div [ class "skeleton h-4 w-full" ] []
-                    , div [ class "skeleton h-4 w-full" ] []
-                    , div [ class "skeleton h-4 w-full" ] []
-                    , div [ class "skeleton h-4 w-32" ] []
-                    ]
+        , case model.route of
+            Blacks ->
+                renderCardScreen model.state
+                    (case model.blacks of
+                        Just blacks ->
+                            screen_blacks model.currentLanguage blacks
 
-            ShufflingCards ->
-                card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-4" ]
-                    [ div [ class "skeleton h-4 w-full animate-pulse" ] []
-                    , div [ class "skeleton h-4 w-full animate-pulse" ] []
-                    , div [ class "skeleton h-4 w-full animate-pulse" ] []
-                    , div [ class "skeleton h-4 w-full animate-pulse" ] []
-                    , div [ class "skeleton h-4 w-32 animate-pulse" ] []
-                    ]
+                        Nothing ->
+                            div [] [ text t.noBlackCardsLoaded ]
+                    )
 
-            Failed error ->
-                card [ class "bg-error rounded-box flex-1 w-full flex flex-col gap-4" ]
-                    [ text ("Error: " ++ error) ]
+            Whites ->
+                renderCardScreen model.state
+                    (case model.whites of
+                        Just whites ->
+                            screen_whites model.currentLanguage whites
 
-            Loaded ->
+                        Nothing ->
+                            div [] [ text t.noWhiteCardsLoaded ]
+                    )
+
+            Scores ->
+                screen model
+
+            Settings ->
                 screen model
         ]
 
@@ -376,25 +467,52 @@ wakeLockButton model =
     input (attrs ++ [ type_ "checkbox" ]) [ I.screencast I.Regular |> I.toHtml [] ]
 
 
+languageSelector : Language -> Html Msg
+languageSelector currentLanguage =
+    Html.select
+        [ class "select select-bordered w-fit"
+        , Html.Events.onInput
+            (\selectedValue ->
+                case selectedValue of
+                    "en" ->
+                        LanguageChanged English
+
+                    "es" ->
+                        LanguageChanged Spanish
+
+                    "pl" ->
+                        LanguageChanged Polish
+
+                    _ ->
+                        NoOp
+            )
+        ]
+        [ Html.option
+            [ Html.Attributes.value "en"
+            , Html.Attributes.selected (currentLanguage == English)
+            ]
+            [ text "English" ]
+        , Html.option
+            [ Html.Attributes.value "es"
+            , Html.Attributes.selected (currentLanguage == Spanish)
+            ]
+            [ text "Español" ]
+        , Html.option
+            [ Html.Attributes.value "pl"
+            , Html.Attributes.selected (currentLanguage == Polish)
+            ]
+            [ text "Polski" ]
+        ]
+
+
 screen : Model -> Html Msg
 screen model =
+    let
+        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
+        t =
+            getTranslations model.currentLanguage
+    in
     case model.route of
-        Whites ->
-            case model.whites of
-                Just whites ->
-                    screen_whites whites
-
-                Nothing ->
-                    div [] [ text "No se cargaron cartas blancas" ]
-
-        Blacks ->
-            case model.blacks of
-                Just blacks ->
-                    screen_blacks blacks
-
-                Nothing ->
-                    div [] [ text "No se cargaron cartas negras" ]
-
         Scores ->
             div [ class "flex flex-col gap-2 flex-1 w-full" ]
                 [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
@@ -431,7 +549,7 @@ screen model =
                         [ class "btn btn-warning btn-sm"
                         , onClick ResetScores
                         ]
-                        [ text "Reiniciar" ]
+                        [ text t.reset ]
                     , button
                         [ class "btn btn-sm btn-primary gap-2 self-center"
                         , onClick AddPlayer
@@ -441,42 +559,63 @@ screen model =
                           else
                             disabled True
                         ]
-                        [ text "Agregar" ]
+                        [ text t.add ]
                     ]
                 ]
 
         Settings ->
             div [ class "flex flex-col gap-2 flex-1 w-full" ]
                 [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
-                    [ h3 [ class "text-3xl font-bold mb-10" ] [ text "Settings" ]
-                    , div [ class "flex flex-col gap-2" ]
-                        [ label [ class "flex items-center justify-between w-full text-xl" ]
-                            [ text "Prevent screen dimming"
+                    [ h3 [ class "text-3xl font-bold mb-10" ] [ text t.settings ]
+                    , div [ class "flex flex-col gap-4" ]
+                        [ label [ class "flex items-center justify-between w-full" ]
+                            [ text t.selectLanguage
+                            , languageSelector model.currentLanguage
+                            ]
+                        , label [ class "flex items-center justify-between w-full" ]
+                            [ text t.preventScreenDimming
                             , wakeLockButton model
                             ]
                         ]
                     ]
                 ]
 
+        -- These cases should never be reached as they're handled in the main view
+        Whites ->
+            div [] []
 
-screen_whites : Zip.ZipList String -> Html Msg
-screen_whites (Zip.Zipper prev curr next) =
+        Blacks ->
+            div [] []
+
+
+screen_whites : Language -> Zip.ZipList String -> Html Msg
+screen_whites language (Zip.Zipper prev curr next) =
+    let
+        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
+        t =
+            getTranslations language
+    in
     div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-white text-black" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevWhite, enabled prev ] [ text "Anterior" ]
-            , button [ class "self-start btn btn-sm btn-secondary", onClick NextWhite, enabled next ] [ text "Siguiente" ]
+            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevWhite, enabled prev ] [ text t.previous ]
+            , button [ class "self-start btn btn-sm btn-secondary", onClick NextWhite, enabled next ] [ text t.next ]
             ]
         ]
 
 
-screen_blacks : Zip.ZipList String -> Html Msg
-screen_blacks (Zip.Zipper prev curr next) =
+screen_blacks : Language -> Zip.ZipList String -> Html Msg
+screen_blacks language (Zip.Zipper prev curr next) =
+    let
+        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
+        t =
+            getTranslations language
+    in
     div [ class "flex flex-col w-full gap-2 flex-1" ]
         [ deck [ class "flex-1 w-full" ] [ card [ class "bg-black text-white" ] [ text curr ] ]
         , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevBlack, enabled prev ] [ text "Anterior" ]
-            , button [ class "self-start btn btn-sm btn-secondary", onClick NextBlack, enabled next ] [ text "Siguiente" ]
+            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevBlack, enabled prev ] [ text t.previous ]
+            , button [ class "self-start btn btn-sm btn-secondary", onClick NextBlack, enabled next ] [ text t.next ]
             ]
         ]
 

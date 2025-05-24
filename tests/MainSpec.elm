@@ -5,6 +5,7 @@ import Main exposing (DeckState(..), Model, Route(..), WakeLockStatus(..), view)
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, disabled, tag, text)
+import Translations exposing (Language(..))
 import ZipList as Zip
 
 
@@ -27,6 +28,7 @@ testModel =
         ]
     , nextPlayerId = 3
     , wakeLockStatus = WakeLockUnknown
+    , currentLanguage = English
     }
 
 
@@ -80,7 +82,7 @@ suite =
                             ]
                     }
                     |> Query.fromHtml
-                    |> Query.has [ text "Reiniciar" ]
+                    |> Query.has [ text "Reset" ]
         , test "Wake lock button is disabled when status is unknown" <|
             \_ ->
                 view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockUnknown }

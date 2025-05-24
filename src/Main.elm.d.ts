@@ -21,9 +21,9 @@ export interface ElmApp {
   };
 }
 
-export type FromElm = { tag : "WakeLockRelease" } | { tag : "WakeLockAcquire" } | { tag : "WakeLockCheck" };
+export type FromElm = { language : string; tag : "SaveLanguagePreference" } | { tag : "DetectLanguage" } | { tag : "WakeLockRelease" } | { tag : "WakeLockAcquire" } | { tag : "WakeLockCheck" };
 
-export type ToElm = { error : string; tag : "WakeLockError" } | { tag : "WakeLockReleased" } | { tag : "WakeLockAcquired" } | { tag : "WakeLockAvailable" };
+export type ToElm = { language : string; tag : "LanguageDetected" } | { error : string; tag : "WakeLockError" } | { tag : "WakeLockReleased" } | { tag : "WakeLockAcquired" } | { tag : "WakeLockAvailable" };
 
 export type Flags = null;
 

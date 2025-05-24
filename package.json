@@ -14,7 +14,8 @@
     "lint": "elm-review",
     "test": "elm-test-rs",
     "interop": "elm-ts-interop --output src/Main.elm.d.ts",
-    "upgrade": "elm-json upgrade && cd review && elm-json upgrade && cd .."
+    "upgrade": "elm-json upgrade && cd review && elm-json upgrade && cd ..",
+    "compile": "elm make src/Main.elm --output=/dev/null"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.6",

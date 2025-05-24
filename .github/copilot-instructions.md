@@ -32,8 +32,8 @@ This codebase uses Elm, a pure functional language.
 
 ## Implementing New Features
 
-Do not write any code yet.
-We use RFC to think about new features that will be added to the codebase.
+When asked to implement a new feature, DO NOT WRITE ANY CODE!
+Instead, write a new RFC to think about new features that will be added to the codebase.
 
 - Be short and concise.
 - Target a technical audience.
@@ -41,6 +41,7 @@ We use RFC to think about new features that will be added to the codebase.
 - Name files based on the feature and add a `.rfc.md` suffix:
   - `rfc/001-some-new-feature.rfc.md`
   - `rfc/002-some-new-endpoint.rfc.md`
+- Iterate over the RFC to learn more.
 
 ### Mandatory RFC sections
 

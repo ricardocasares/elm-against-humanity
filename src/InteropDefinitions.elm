@@ -31,12 +31,13 @@ type ToElm
     | WakeLockAcquired
     | WakeLockReleased
     | WakeLockError String
+    | LanguageDetected String
 
 
 toElm : Codec ToElm
 toElm =
     Codec.custom (Just "tag")
-        (\vAvailable vAcquired vReleased vError value ->
+        (\vAvailable vAcquired vReleased vError vLanguageDetected value ->
             case value of
                 WakeLockAvailable ->
                     vAvailable
@@ -49,11 +50,15 @@ toElm =
 
                 WakeLockError err ->
                     vError err
+
+                LanguageDetected lang ->
+                    vLanguageDetected lang
         )
         |> Codec.variant0 "WakeLockAvailable" WakeLockAvailable
         |> Codec.variant0 "WakeLockAcquired" WakeLockAcquired
         |> Codec.variant0 "WakeLockReleased" WakeLockReleased
         |> Codec.namedVariant1 "WakeLockError" WakeLockError ( "error", Codec.string )
+        |> Codec.namedVariant1 "LanguageDetected" LanguageDetected ( "language", Codec.string )
         |> Codec.buildCustom
 
 
@@ -61,12 +66,14 @@ type FromElm
     = WakeLockCheck
     | WakeLockAcquire
     | WakeLockRelease
+    | DetectLanguage
+    | SaveLanguagePreference String
 
 
 fromElm : Codec FromElm
 fromElm =
     Codec.custom (Just "tag")
-        (\vCheck vAcquire vRelease value ->
+        (\vCheck vAcquire vRelease vDetectLanguage vSaveLanguagePreference value ->
             case value of
                 WakeLockCheck ->
                     vCheck
@@ -76,8 +83,16 @@ fromElm =
 
                 WakeLockRelease ->
                     vRelease
+
+                DetectLanguage ->
+                    vDetectLanguage
+
+                SaveLanguagePreference lang ->
+                    vSaveLanguagePreference lang
         )
         |> Codec.variant0 "WakeLockCheck" WakeLockCheck
         |> Codec.variant0 "WakeLockAcquire" WakeLockAcquire
         |> Codec.variant0 "WakeLockRelease" WakeLockRelease
+        |> Codec.variant0 "DetectLanguage" DetectLanguage
+        |> Codec.namedVariant1 "SaveLanguagePreference" SaveLanguagePreference ( "language", Codec.string )
         |> Codec.buildCustom

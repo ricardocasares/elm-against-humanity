@@ -10,6 +10,10 @@ app.ports.interopFromElm.subscribe((msg) =>
     .with({ tag: "WakeLockCheck" }, wakeLockCheck)
     .with({ tag: "WakeLockAcquire" }, wakeLockAcquire)
     .with({ tag: "WakeLockRelease" }, wakeLockRelease)
+    .with({ tag: "DetectLanguage" }, detectLanguage)
+    .with({ tag: "SaveLanguagePreference" }, ({ language }) =>
+      saveLanguagePreference(language)
+    )
     .exhaustive()
 );
 
@@ -42,3 +46,21 @@ const wakeLockRelease = () =>
         error: String(err?.message || err),
       })
     );
+
+const detectLanguage = () => {
+  // Check localStorage first for saved preference
+  const savedLanguage = localStorage.getItem("humanity-language");
+  if (savedLanguage) {
+    send({ tag: "LanguageDetected", language: savedLanguage });
+    return;
+  }
+
+  // Otherwise detect from navigator.language
+  const browserLanguage =
+    navigator.language || navigator.languages?.[0] || "en";
+  send({ tag: "LanguageDetected", language: browserLanguage });
+};
+
+const saveLanguagePreference = (language: string) => {
+  localStorage.setItem("humanity-language", language);
+};

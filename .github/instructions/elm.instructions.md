@@ -8,6 +8,8 @@ applyTo: "**/*.elm"
 - Each rule has two code examples:
   - Bad: Avoid writting code in this way
   - Good: Always try to use the good patterns where they apply
+- Prefer qualified imports, exposing only type constructors if needed
+- As an exception to the above rule, prefer `exposing` syntax for the HTML module
 
 ## Use Type Annotations
 
