@@ -1,7 +1,7 @@
 module MainSpec exposing (suite)
 
 import Expect
-import Main exposing (DeckState(..), Model, Route(..), view)
+import Main exposing (DeckState(..), Model, Route(..), WakeLockStatus(..), view)
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, disabled, tag, text)
@@ -12,7 +12,7 @@ testModel : Model
 testModel =
     { route = Blacks
     , state = Loading
-    , originalDeck = Nothing
+    , deck = Nothing
     , blacks = Nothing
     , whites = Nothing
     , players =
@@ -26,6 +26,7 @@ testModel =
           }
         ]
     , nextPlayerId = 3
+    , wakeLockStatus = WakeLockUnknown
     }
 
 
@@ -80,4 +81,50 @@ suite =
                     }
                     |> Query.fromHtml
                     |> Query.has [ text "Reiniciar" ]
+        , test "Wake lock button is disabled when status is unknown" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockUnknown }
+                    |> Query.fromHtml
+                    |> Query.find [ tag "input", class "toggle" ]
+                    |> Query.has [ disabled True, class "toggle-info" ]
+        , test "Wake lock button is enabled when supported" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockSupported }
+                    |> Query.fromHtml
+                    |> Query.find [ tag "input", class "toggle" ]
+                    |> Query.has [ disabled False, class "toggle" ]
+        , test "Wake lock button shows error state when not supported" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockNotSupported }
+                    |> Query.fromHtml
+                    |> Query.find [ tag "input", class "toggle" ]
+                    |> Query.has [ disabled True, class "toggle-error" ]
+        , test "Wake lock button is checked when active" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockActive }
+                    |> Query.fromHtml
+                    |> Query.find [ tag "input", class "toggle" ]
+                    |> Query.has [ disabled False, class "toggle-success" ]
+        , test "Wake lock button is unchecked when inactive" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockInactive }
+                    |> Query.fromHtml
+                    |> Query.find [ tag "input", class "toggle" ]
+                    |> Query.has [ disabled False, class "toggle-primary" ]
+        , test "Wake lock button shows error when failed" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockFailed "Error message" }
+                    |> Query.fromHtml
+                    |> Query.find [ tag "input", class "toggle" ]
+                    |> Query.has [ disabled True, class "toggle-error" ]
+        , test "Settings view contains wake lock button" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ tag "input", class "toggle" ]
+        , test "Settings view shows prevent screen dimming label" <|
+            \_ ->
+                view { testModel | route = Settings, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ text "Prevent screen dimming" ]
         ]

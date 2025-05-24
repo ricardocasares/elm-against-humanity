@@ -13,6 +13,7 @@
     "serve": "vite preview",
     "lint": "elm-review",
     "test": "elm-test-rs",
+    "interop": "elm-ts-interop --output src/Main.elm.d.ts",
     "upgrade": "elm-json upgrade && cd review && elm-json upgrade && cd .."
   },
   "devDependencies": {
@@ -20,8 +21,13 @@
     "daisyui": "^5.0.35",
     "elm-review": "^2.13.2",
     "elm-tooling": "^1.15.1",
+    "elm-ts-interop": "^0.0.8",
     "tailwindcss": "^4.1.6",
     "vite": "^5.1.2",
-    "vite-plugin-elm": "^3.0.1"
+    "vite-plugin-elm": "^3.0.1",
+    "vite-plugin-mkcert": "^1.17.8"
+  },
+  "dependencies": {
+    "ts-pattern": "^5.7.1"
   }
 }

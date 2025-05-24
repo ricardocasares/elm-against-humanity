@@ -1,11 +1,14 @@
-module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), main, view)
+module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), WakeLockStatus(..), main, view)
 
 import Browser
-import Html exposing (Html, button, div, input, text)
-import Html.Attributes exposing (attribute, class, disabled, lang, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, button, div, h3, input, label, text)
+import Html.Attributes exposing (attribute, checked, class, disabled, lang, title, type_, value)
+import Html.Events exposing (onCheck, onClick, onInput)
 import Http
+import InteropDefinitions as IO exposing (ToElm(..))
+import InteropPorts as IO
 import Json.Decode as Decode exposing (Decoder)
+import Phosphor as I
 import Random
 import Random.List
 import ZipList as Zip
@@ -15,6 +18,7 @@ type Route
     = Blacks
     | Whites
     | Scores
+    | Settings
 
 
 type alias Deck =
@@ -40,12 +44,22 @@ type alias Player =
 type alias Model =
     { route : Route
     , state : DeckState
-    , originalDeck : Maybe Deck
+    , deck : Maybe Deck
     , blacks : Maybe (Zip.ZipList String)
     , whites : Maybe (Zip.ZipList String)
     , players : List Player
     , nextPlayerId : Int
+    , wakeLockStatus : WakeLockStatus
     }
+
+
+type WakeLockStatus
+    = WakeLockUnknown
+    | WakeLockSupported
+    | WakeLockNotSupported
+    | WakeLockActive
+    | WakeLockInactive
+    | WakeLockFailed String
 
 
 listToZipList : List a -> Maybe (Zip.ZipList a)
@@ -66,11 +80,16 @@ type Msg
     | PrevWhite
     | GotDeck (Result Http.Error Deck)
     | ShuffledCards (List String) (List String)
-    | Reshuffle
     | AddPlayer
     | RemovePlayer Int
     | UpdatePlayerScore Int String
     | ResetScores
+    | WakeLockToggle
+    | WakeLockAcquired
+    | WakeLockAvailable
+    | WakeLockReleased
+    | WakeLockError String
+    | NoOp
 
 
 playerColors : List String
@@ -105,14 +124,44 @@ getDeck =
 
 main : Program () Model Msg
 main =
-    Browser.element { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
+    Browser.element
+        { init = init
+        , update = update
+        , view = view
+        , subscriptions = subscriptions
+        }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    IO.toElm
+        |> Sub.map
+            (\result ->
+                case result of
+                    Ok data ->
+                        case data of
+                            IO.WakeLockAvailable ->
+                                WakeLockAvailable
+
+                            IO.WakeLockAcquired ->
+                                WakeLockAcquired
+
+                            IO.WakeLockReleased ->
+                                WakeLockReleased
+
+                            IO.WakeLockError error ->
+                                WakeLockError error
+
+                    Err _ ->
+                        NoOp
+            )
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { route = Blacks
+      , deck = Nothing
       , state = Loading
-      , originalDeck = Nothing
       , blacks = Nothing
       , whites = Nothing
       , players =
@@ -126,14 +175,38 @@ init _ =
               }
             ]
       , nextPlayerId = 3
+      , wakeLockStatus = WakeLockUnknown
       }
-    , getDeck
+    , Cmd.batch [ getDeck, IO.fromElm IO.WakeLockCheck ]
     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        WakeLockAvailable ->
+            ( { model | wakeLockStatus = WakeLockSupported }, Cmd.none )
+
+        WakeLockToggle ->
+            case model.wakeLockStatus of
+                WakeLockActive ->
+                    ( model, IO.fromElm IO.WakeLockRelease )
+
+                _ ->
+                    ( model, IO.fromElm IO.WakeLockAcquire )
+
+        WakeLockAcquired ->
+            ( { model | wakeLockStatus = WakeLockActive }, Cmd.none )
+
+        WakeLockReleased ->
+            ( { model | wakeLockStatus = WakeLockInactive }, Cmd.none )
+
+        WakeLockError error ->
+            ( { model | wakeLockStatus = WakeLockFailed error }, Cmd.none )
+
         TabClicked route ->
             ( { model | route = route }, Cmd.none )
 
@@ -154,7 +227,7 @@ update msg model =
                 Ok loadedDeck ->
                     ( { model
                         | state = ShufflingCards
-                        , originalDeck = Just loadedDeck
+                        , deck = Just loadedDeck
                       }
                     , Random.generate
                         (\( blacks, whites ) -> ShuffledCards blacks whites)
@@ -177,21 +250,6 @@ update msg model =
               }
             , Cmd.none
             )
-
-        Reshuffle ->
-            case model.originalDeck of
-                Just originalDeck ->
-                    ( { model | state = ShufflingCards }
-                    , Random.generate
-                        (\( blacks, whites ) -> ShuffledCards blacks whites)
-                        (Random.map2 Tuple.pair
-                            (Random.List.shuffle originalDeck.blacks |> Random.map (List.take 40))
-                            (Random.List.shuffle originalDeck.whites |> Random.map (List.take 40))
-                        )
-                    )
-
-                Nothing ->
-                    ( model, Cmd.none )
 
         AddPlayer ->
             let
@@ -255,25 +313,10 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
-        [ div [ class "w-full flex justify-between items-center" ]
-            [ button
-                [ class "btn btn-accent btn-sm"
-                , onClick Reshuffle
-                , disabled
-                    (case model.state of
-                        Loading ->
-                            True
-
-                        ShufflingCards ->
-                            True
-
-                        _ ->
-                            False
-                    )
-                ]
-                [ text "Barajar" ]
-            , tabs [ class "font-bold tabs-xs" ]
-                [ tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Puntos" ]
+        [ div [ class "w-full flex items-center justify-end" ]
+            [ tabs [ class "font-bold tabs-sm" ]
+                [ tab [ active model.route Settings, onClick (TabClicked Settings) ] [ I.wrench I.Regular |> I.toHtml [] ]
+                , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text "Puntos" ]
                 , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text "Cartas Blancas" ]
                 , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text "Cartas Negras" ]
                 ]
@@ -304,6 +347,32 @@ view model =
             Loaded ->
                 screen model
         ]
+
+
+wakeLockButton : Model -> Html Msg
+wakeLockButton model =
+    let
+        attrs =
+            case model.wakeLockStatus of
+                WakeLockUnknown ->
+                    [ class "toggle toggle-info", disabled True, checked False ]
+
+                WakeLockSupported ->
+                    [ class "toggle", disabled False, checked False, onCheck (\_ -> WakeLockToggle) ]
+
+                WakeLockNotSupported ->
+                    [ class "toggle toggle-error", disabled True, checked False, title "Not supported on your device" ]
+
+                WakeLockActive ->
+                    [ class "toggle toggle-success", disabled False, checked True, onCheck (\_ -> WakeLockToggle) ]
+
+                WakeLockInactive ->
+                    [ class "toggle toggle-primary", disabled False, checked False, onCheck (\_ -> WakeLockToggle) ]
+
+                WakeLockFailed err ->
+                    [ class "toggle toggle-error", disabled True, checked False, title err ]
+    in
+    input (attrs ++ [ type_ "checkbox" ]) [ I.screencast I.Regular |> I.toHtml [] ]
 
 
 screen : Model -> Html Msg
@@ -372,6 +441,19 @@ screen model =
                             disabled True
                         ]
                         [ text "Agregar" ]
+                    ]
+                ]
+
+        Settings ->
+            div [ class "flex flex-col gap-2 flex-1 w-full" ]
+                [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
+                    [ h3 [ class "text-3xl font-bold mb-10" ] [ text "Settings" ]
+                    , div [ class "flex flex-col gap-2" ]
+                        [ label [ class "flex items-center justify-between w-full text-xl" ]
+                            [ text "Prevent screen dimming"
+                            , wakeLockButton model
+                            ]
+                        ]
                     ]
                 ]
 
