@@ -9,6 +9,19 @@ applyTo: "**/*.elm"
   - Bad: Avoid writting code in this way
   - Good: Always try to use the good patterns where they apply
 
+## Use Type Annotations
+
+Always use type anotations in functions and declarations:
+
+```elm
+-- Bad: no type annotations
+double num = num * 2
+
+-- Good: type annotations are provided
+double: Int -> Int
+double num = num * 2
+```
+
 ## Avoid Type Blindness
 
 Type blindness is when you have several values of the same type that could get mixed up.

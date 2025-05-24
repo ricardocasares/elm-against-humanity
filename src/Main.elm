@@ -5,7 +5,7 @@ import Html exposing (Html, button, div, h3, input, label, text)
 import Html.Attributes exposing (attribute, checked, class, disabled, lang, title, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
 import Http
-import InteropDefinitions as IO exposing (ToElm(..))
+import InteropDefinitions as IO
 import InteropPorts as IO
 import Json.Decode as Decode exposing (Decoder)
 import Phosphor as I
@@ -352,6 +352,7 @@ view model =
 wakeLockButton : Model -> Html Msg
 wakeLockButton model =
     let
+        attrs : List (Html.Attribute Msg)
         attrs =
             case model.wakeLockStatus of
                 WakeLockUnknown ->
