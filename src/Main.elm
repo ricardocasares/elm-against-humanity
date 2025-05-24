@@ -1,4 +1,4 @@
-module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), WakeLockStatus(..), main, view)
+module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), TouchState, WakeLockStatus(..), main, view)
 
 import Browser
 import Html exposing (Html, button, div, h3, input, label, text)
@@ -52,6 +52,18 @@ type alias Model =
     , nextPlayerId : Int
     , wakeLockStatus : WakeLockStatus
     , currentLanguage : Language
+    , selectedBlackCard : Bool
+    , selectedWhiteCard : Bool
+    , touchState : TouchState
+    }
+
+
+type alias TouchState =
+    { startX : Float
+    , startY : Float
+    , currentX : Float
+    , currentY : Float
+    , isActive : Bool
     }
 
 
@@ -74,6 +86,74 @@ listToZipList list =
             Nothing
 
 
+type SwipeDirection
+    = SwipeLeft
+    | SwipeRight
+
+
+detectSwipe : TouchState -> Maybe SwipeDirection
+detectSwipe touch =
+    let
+        deltaX : Float
+        deltaX =
+            touch.currentX - touch.startX
+
+        deltaY : Float
+        deltaY =
+            touch.currentY - touch.startY
+
+        minSwipeDistance : Float
+        minSwipeDistance =
+            50.0
+
+        maxVerticalTolerance : Float
+        maxVerticalTolerance =
+            100.0
+    in
+    if abs deltaX > minSwipeDistance && abs deltaY < maxVerticalTolerance then
+        if deltaX > 0 then
+            Just SwipeRight
+
+        else
+            Just SwipeLeft
+
+    else
+        Nothing
+
+
+initialTouchState : TouchState
+initialTouchState =
+    { startX = 0
+    , startY = 0
+    , currentX = 0
+    , currentY = 0
+    , isActive = False
+    }
+
+
+onTouchStart : (Float -> Float -> msg) -> Html.Attribute msg
+onTouchStart msg =
+    Html.Events.on "touchstart"
+        (Decode.map2 msg
+            (Decode.at [ "touches", "0", "clientX" ] Decode.float)
+            (Decode.at [ "touches", "0", "clientY" ] Decode.float)
+        )
+
+
+onTouchMove : (Float -> Float -> msg) -> Html.Attribute msg
+onTouchMove msg =
+    Html.Events.on "touchmove"
+        (Decode.map2 msg
+            (Decode.at [ "touches", "0", "clientX" ] Decode.float)
+            (Decode.at [ "touches", "0", "clientY" ] Decode.float)
+        )
+
+
+onTouchEnd : msg -> Html.Attribute msg
+onTouchEnd msg =
+    Html.Events.on "touchend" (Decode.succeed msg)
+
+
 type Msg
     = TabClicked Route
     | NextBlack
@@ -93,6 +173,11 @@ type Msg
     | WakeLockError String
     | LanguageDetected String
     | LanguageChanged Language
+    | BlackCardClicked
+    | WhiteCardClicked
+    | TouchStart Float Float
+    | TouchMove Float Float
+    | TouchEnd
     | NoOp
 
 
@@ -197,6 +282,9 @@ init _ =
       , nextPlayerId = 3
       , wakeLockStatus = WakeLockUnknown
       , currentLanguage = Spanish
+      , selectedBlackCard = False
+      , selectedWhiteCard = False
+      , touchState = initialTouchState
       }
     , Cmd.batch [ IO.fromElm IO.DetectLanguage, IO.fromElm IO.WakeLockCheck ]
     )
@@ -355,6 +443,83 @@ update msg model =
             , Cmd.none
             )
 
+        BlackCardClicked ->
+            ( { model | selectedBlackCard = not model.selectedBlackCard }, Cmd.none )
+
+        WhiteCardClicked ->
+            ( { model | selectedWhiteCard = not model.selectedWhiteCard }, Cmd.none )
+
+        TouchStart x y ->
+            ( { model
+                | touchState =
+                    { startX = x
+                    , startY = y
+                    , currentX = x
+                    , currentY = y
+                    , isActive = True
+                    }
+              }
+            , Cmd.none
+            )
+
+        TouchMove x y ->
+            if model.touchState.isActive then
+                ( { model
+                    | touchState =
+                        { startX = model.touchState.startX
+                        , startY = model.touchState.startY
+                        , currentX = x
+                        , currentY = y
+                        , isActive = True
+                        }
+                  }
+                , Cmd.none
+                )
+
+            else
+                ( model, Cmd.none )
+
+        TouchEnd ->
+            let
+                swipeDirection : Maybe SwipeDirection
+                swipeDirection =
+                    detectSwipe model.touchState
+
+                ( newModel, cmd ) =
+                    case ( swipeDirection, model.route ) of
+                        ( Just SwipeLeft, Blacks ) ->
+                            if not model.selectedBlackCard then
+                                update NextBlack model
+
+                            else
+                                ( model, Cmd.none )
+
+                        ( Just SwipeRight, Blacks ) ->
+                            if not model.selectedBlackCard then
+                                update PrevBlack model
+
+                            else
+                                ( model, Cmd.none )
+
+                        ( Just SwipeLeft, Whites ) ->
+                            if not model.selectedWhiteCard then
+                                update NextWhite model
+
+                            else
+                                ( model, Cmd.none )
+
+                        ( Just SwipeRight, Whites ) ->
+                            if not model.selectedWhiteCard then
+                                update PrevWhite model
+
+                            else
+                                ( model, Cmd.none )
+
+                        _ ->
+                            ( model, Cmd.none )
+            in
+            ( { newModel | touchState = initialTouchState }, cmd )
+
 
 {-| Helper function to render loading states for card screens (Blacks/Whites)
 -}
@@ -416,7 +581,7 @@ view model =
                 renderCardScreen model.state
                     (case model.blacks of
                         Just blacks ->
-                            screen_blacks model.currentLanguage blacks
+                            screen_blacks model.currentLanguage blacks model
 
                         Nothing ->
                             div [] [ text t.noBlackCardsLoaded ]
@@ -426,7 +591,7 @@ view model =
                 renderCardScreen model.state
                     (case model.whites of
                         Just whites ->
-                            screen_whites model.currentLanguage whites
+                            screen_whites model.currentLanguage whites model
 
                         Nothing ->
                             div [] [ text t.noWhiteCardsLoaded ]
@@ -588,52 +753,68 @@ screen model =
             div [] []
 
 
-screen_whites : Language -> Zip.ZipList String -> Html Msg
-screen_whites language (Zip.Zipper prev curr next) =
+screen_whites : Language -> Zip.ZipList String -> Model -> Html Msg
+screen_whites _ (Zip.Zipper _ curr _) model =
     let
-        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
-        t =
-            getTranslations language
+        cardClasses : String
+        cardClasses =
+            if model.selectedWhiteCard then
+                "bg-white text-black border-3 border-secondary shadow-lg"
+
+            else
+                "bg-white text-black"
+
+        touchEvents : List (Html.Attribute Msg)
+        touchEvents =
+            if model.selectedWhiteCard then
+                [ onClick WhiteCardClicked ]
+
+            else
+                [ onClick WhiteCardClicked
+                , onTouchStart TouchStart
+                , onTouchMove TouchMove
+                , onTouchEnd TouchEnd
+                ]
     in
     div [ class "flex flex-col w-full gap-2 flex-1" ]
-        [ deck [ class "flex-1 w-full" ] [ card [ class "bg-white text-black" ] [ text curr ] ]
-        , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevWhite, enabled prev ] [ text t.previous ]
-            , button [ class "self-start btn btn-sm btn-secondary", onClick NextWhite, enabled next ] [ text t.next ]
-            ]
+        [ deck [ class "flex-1 w-full" ]
+            [ card (class cardClasses :: touchEvents) [ text curr ] ]
         ]
 
 
-screen_blacks : Language -> Zip.ZipList String -> Html Msg
-screen_blacks language (Zip.Zipper prev curr next) =
+screen_blacks : Language -> Zip.ZipList String -> Model -> Html Msg
+screen_blacks _ (Zip.Zipper _ curr _) model =
     let
-        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
-        t =
-            getTranslations language
+        cardClasses : String
+        cardClasses =
+            if model.selectedBlackCard then
+                "bg-black text-white border-3 border-secondary shadow-lg"
+
+            else
+                "bg-black text-white"
+
+        touchEvents : List (Html.Attribute Msg)
+        touchEvents =
+            if model.selectedBlackCard then
+                [ onClick BlackCardClicked ]
+
+            else
+                [ onClick BlackCardClicked
+                , onTouchStart TouchStart
+                , onTouchMove TouchMove
+                , onTouchEnd TouchEnd
+                ]
     in
     div [ class "flex flex-col w-full gap-2 flex-1" ]
-        [ deck [ class "flex-1 w-full" ] [ card [ class "bg-black text-white" ] [ text curr ] ]
-        , div [ class "flex justify-between w-full" ]
-            [ button [ class "self-start btn btn-sm btn-secondary", onClick PrevBlack, enabled prev ] [ text t.previous ]
-            , button [ class "self-start btn btn-sm btn-secondary", onClick NextBlack, enabled next ] [ text t.next ]
-            ]
+        [ deck [ class "flex-1 w-full" ]
+            [ card (class cardClasses :: touchEvents) [ text curr ] ]
         ]
-
-
-enabled : List String -> Html.Attribute msg
-enabled prev =
-    case prev of
-        [] ->
-            disabled True
-
-        _ ->
-            disabled False
 
 
 card : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 card attrs content =
     div
-        (List.append [ class "p-6 font-bold text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto", lang "en" ] attrs)
+        (List.append [ class "p-6 border-3 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto", lang "en" ] attrs)
         content
 
 

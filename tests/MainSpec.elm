@@ -29,6 +29,15 @@ testModel =
     , nextPlayerId = 3
     , wakeLockStatus = WakeLockUnknown
     , currentLanguage = English
+    , selectedBlackCard = False
+    , selectedWhiteCard = False
+    , touchState =
+        { startX = 0
+        , startY = 0
+        , currentX = 0
+        , currentY = 0
+        , isActive = False
+        }
     }
 
 
