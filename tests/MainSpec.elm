@@ -138,4 +138,36 @@ suite =
                 view { testModel | route = Settings, state = Loaded }
                     |> Query.fromHtml
                     |> Query.has [ text "Prevent screen dimming" ]
+        , test "Help tab is present in navigation" <|
+            \_ ->
+                view { testModel | route = Help, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.findAll [ tag "button" ]
+                    |> Query.first
+                    |> Query.has [ tag "button" ]
+        , test "Help page displays how to play title" <|
+            \_ ->
+                view { testModel | route = Help, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ text "How to Play" ]
+        , test "Help page displays game instructions" <|
+            \_ ->
+                view { testModel | route = Help, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ text "The Card Czar reads a black card aloud to all players." ]
+        , test "Help page displays player roles section" <|
+            \_ ->
+                view { testModel | route = Help, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ text "Player Roles" ]
+        , test "Help page displays gameplay steps" <|
+            \_ ->
+                view { testModel | route = Help, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ text "How to Play" ]
+        , test "Help page displays scoring information" <|
+            \_ ->
+                view { testModel | route = Help, state = Loaded }
+                    |> Query.fromHtml
+                    |> Query.has [ text "Scoring" ]
         ]

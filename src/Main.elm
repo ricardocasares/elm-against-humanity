@@ -1,7 +1,7 @@
 module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), TouchState, WakeLockStatus(..), main, view)
 
 import Browser
-import Html exposing (Html, button, div, h3, input, label, text)
+import Html exposing (Html, button, div, h3, h4, input, label, text)
 import Html.Attributes exposing (attribute, checked, class, disabled, lang, title, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
 import Http
@@ -11,7 +11,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Phosphor as I
 import Random
 import Random.List
-import Translations exposing (Language(..), getTranslations, languageFromString, languageToString)
+import Translations exposing (Language(..), Translations, getTranslations, languageFromString, languageToString)
 import ZipList as Zip
 
 
@@ -20,6 +20,7 @@ type Route
     | Whites
     | Scores
     | Settings
+    | Help
 
 
 type alias Deck =
@@ -563,7 +564,7 @@ errorCard error =
 view : Model -> Html Msg
 view model =
     let
-        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
+        t : Translations.Translations
         t =
             getTranslations model.currentLanguage
     in
@@ -571,6 +572,7 @@ view model =
         [ div [ class "w-full flex items-center justify-end" ]
             [ tabs [ class "font-bold tabs-sm" ]
                 [ tab [ active model.route Settings, onClick (TabClicked Settings) ] [ I.wrench I.Regular |> I.toHtml [] ]
+                , tab [ active model.route Help, onClick (TabClicked Help) ] [ I.question I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text t.scores ]
                 , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text t.whiteCards ]
                 , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text t.blackCards ]
@@ -602,6 +604,61 @@ view model =
 
             Settings ->
                 screen model
+
+            Help ->
+                helpScreen model
+        ]
+
+
+helpScreen : Model -> Html Msg
+helpScreen model =
+    let
+        t : Translations
+        t =
+            getTranslations model.currentLanguage
+    in
+    div [ class "flex flex-col gap-6 flex-1 w-full" ]
+        [ div [ class "bg-base-300 rounded-box p-6 flex flex-col gap-4" ]
+            [ h3 [ class "text-3xl font-bold" ] [ text t.howToPlay ]
+            , div [ class "text-lg leading-relaxed" ]
+                [ text t.gameOverview ]
+            , div [ class "divider" ] []
+            , h4 [ class "text-xl font-semibold" ] [ text t.playerRoles ]
+            , div [ class "text-base leading-relaxed" ]
+                [ text t.czarRole ]
+            , div [ class "divider" ] []
+            , h4 [ class "text-xl font-semibold" ] [ text t.gameplaySteps ]
+            , div [ class "flex flex-col gap-3" ]
+                [ div [ class "flex items-start gap-3" ]
+                    [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "1" ]
+                    , div [ class "text-base leading-relaxed" ] [ text t.czarReadsCard ]
+                    ]
+                , div [ class "flex items-start gap-3" ]
+                    [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "2" ]
+                    , div [ class "text-base leading-relaxed" ] [ text t.playersSelectCards ]
+                    ]
+                , div [ class "flex items-start gap-3" ]
+                    [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "3" ]
+                    , div [ class "text-base leading-relaxed" ] [ text t.playersGivePhones ]
+                    ]
+                , div [ class "flex items-start gap-3" ]
+                    [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "4" ]
+                    , div [ class "text-base leading-relaxed" ] [ text t.czarPicksBest ]
+                    ]
+                , div [ class "flex items-start gap-3" ]
+                    [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "5" ]
+                    , div [ class "text-base leading-relaxed" ] [ text t.pointAwarded ]
+                    ]
+                , div [ class "flex items-start gap-3" ]
+                    [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "6" ]
+                    , div [ class "text-base leading-relaxed" ] [ text t.newRoundStarts ]
+                    ]
+                ]
+            , div [ class "divider" ] []
+            , h4 [ class "text-xl font-semibold" ] [ text t.scoring ]
+            , div [ class "text-base leading-relaxed" ]
+                [ text "Players earn points by having their white cards chosen by the Card Czar. The game continues until players decide to stop, and the player with the most points wins!" ]
+            ]
         ]
 
 
@@ -673,7 +730,7 @@ languageSelector currentLanguage =
 screen : Model -> Html Msg
 screen model =
     let
-        t : { settings : String, scores : String, whiteCards : String, blackCards : String, selectLanguage : String, preventScreenDimming : String, reset : String, add : String, previous : String, next : String, noWhiteCardsLoaded : String, noBlackCardsLoaded : String, error : String }
+        t : Translations
         t =
             getTranslations model.currentLanguage
     in
@@ -750,6 +807,9 @@ screen model =
             div [] []
 
         Blacks ->
+            div [] []
+
+        Help ->
             div [] []
 
 

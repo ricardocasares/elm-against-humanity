@@ -13,6 +13,7 @@ type alias Translations =
     , scores : String
     , whiteCards : String
     , blackCards : String
+    , help : String
 
     -- Settings page
     , selectLanguage : String
@@ -25,6 +26,20 @@ type alias Translations =
     -- Card navigation
     , previous : String
     , next : String
+
+    -- Help page
+    , howToPlay : String
+    , gameOverview : String
+    , playerRoles : String
+    , gameplaySteps : String
+    , scoring : String
+    , czarRole : String
+    , czarReadsCard : String
+    , playersSelectCards : String
+    , playersGivePhones : String
+    , czarPicksBest : String
+    , pointAwarded : String
+    , newRoundStarts : String
 
     -- Error messages
     , noWhiteCardsLoaded : String
@@ -52,12 +67,25 @@ englishTranslations =
     , scores = "Scores"
     , whiteCards = "White Cards"
     , blackCards = "Black Cards"
+    , help = "Help"
     , selectLanguage = "Language"
     , preventScreenDimming = "Prevent screen dimming"
     , reset = "Reset"
     , add = "Add"
     , previous = "Previous"
     , next = "Next"
+    , howToPlay = "How to Play"
+    , gameOverview = "Elm Against Humanity is a party game where players combine cards to create funny or outrageous combinations."
+    , playerRoles = "Player Roles"
+    , gameplaySteps = "How to Play"
+    , scoring = "Scoring"
+    , czarRole = "One player is the Card Czar (this role rotates each round)."
+    , czarReadsCard = "1. The Card Czar reads a black card aloud to all players."
+    , playersSelectCards = "2. All other players select one white card from their hand by tapping on it."
+    , playersGivePhones = "3. Players give their phones to the Card Czar so they can see all the selected white cards."
+    , czarPicksBest = "4. The Card Czar picks the best white card combination in their opinion."
+    , pointAwarded = "5. The player who submitted the chosen white card gets one point."
+    , newRoundStarts = "6. A new round begins with the next player becoming the Card Czar."
     , noWhiteCardsLoaded = "No white cards loaded"
     , noBlackCardsLoaded = "No black cards loaded"
     , error = "Error: "
@@ -70,12 +98,25 @@ spanishTranslations =
     , scores = "Puntos"
     , whiteCards = "Cartas Blancas"
     , blackCards = "Cartas Negras"
+    , help = "Ayuda"
     , selectLanguage = "Idioma"
     , preventScreenDimming = "Evitar que se apague la pantalla"
     , reset = "Reiniciar"
     , add = "Agregar"
     , previous = "Anterior"
     , next = "Siguiente"
+    , howToPlay = "Cómo Jugar"
+    , gameOverview = "Elm Against Humanity es un juego de fiesta donde los jugadores combinan cartas para crear combinaciones divertidas o escandalosas."
+    , playerRoles = "Roles de Jugador"
+    , gameplaySteps = "Cómo Jugar"
+    , scoring = "Puntuación"
+    , czarRole = "Un jugador es el Zar de Cartas (este rol rota cada ronda)."
+    , czarReadsCard = "1. El Zar de Cartas lee una carta negra en voz alta a todos los jugadores."
+    , playersSelectCards = "2. Todos los demás jugadores seleccionan una carta blanca de su mano tocándola."
+    , playersGivePhones = "3. Los jugadores entregan sus teléfonos al Zar de Cartas para que pueda ver todas las cartas blancas seleccionadas."
+    , czarPicksBest = "4. El Zar de Cartas elige la mejor combinación de carta blanca en su opinión."
+    , pointAwarded = "5. El jugador que envió la carta blanca elegida obtiene un punto."
+    , newRoundStarts = "6. Una nueva ronda comienza con el siguiente jugador convirtiéndose en el Zar de Cartas."
     , noWhiteCardsLoaded = "No se cargaron cartas blancas"
     , noBlackCardsLoaded = "No se cargaron cartas negras"
     , error = "Error: "
@@ -88,12 +129,25 @@ polishTranslations =
     , scores = "Punkty"
     , whiteCards = "Białe Karty"
     , blackCards = "Czarne Karty"
+    , help = "Pomoc"
     , selectLanguage = "Język"
     , preventScreenDimming = "Zapobiegaj wygaszaniu ekranu"
     , reset = "Resetuj"
     , add = "Dodaj"
     , previous = "Poprzedni"
     , next = "Następny"
+    , howToPlay = "Jak Grać"
+    , gameOverview = "Elm Against Humanity to gra imprezowa, w której gracze łączą karty, aby tworzyć zabawne lub skandaliczne kombinacje."
+    , playerRoles = "Role Graczy"
+    , gameplaySteps = "Jak Grać"
+    , scoring = "Punktacja"
+    , czarRole = "Jeden gracz to Car Kart (ta rola rotuje co rundę)."
+    , czarReadsCard = "1. Car Kart czyta czarną kartę na głos wszystkim graczom."
+    , playersSelectCards = "2. Wszyscy pozostali gracze wybierają jedną białą kartę z ręki, dotykając jej."
+    , playersGivePhones = "3. Gracze przekazują swoje telefony Carowi Kart, aby mógł zobaczyć wszystkie wybrane białe karty."
+    , czarPicksBest = "4. Car Kart wybiera najlepszą kombinację białej karty według swojej opinii."
+    , pointAwarded = "5. Gracz, który wybrał wybrane białą kartę, otrzymuje jeden punkt."
+    , newRoundStarts = "6. Nowa runda rozpoczyna się z kolejnym graczem stającym się Carem Kart."
     , noWhiteCardsLoaded = "Nie załadowano białych kart"
     , noBlackCardsLoaded = "Nie załadowano czarnych kart"
     , error = "Błąd: "
