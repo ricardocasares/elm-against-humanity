@@ -5,7 +5,7 @@ export const node = document.getElementById("app");
 export const app = Elm.Main.init({
   node,
   flags: {
-    basePath: window.location.pathname + "/",
+    basePath: window.location.pathname.replace(/^\//, ""),
   },
 });
 const send = app.ports.interopToElm.send;
