@@ -10,7 +10,6 @@ type Language
 type alias Translations =
     { -- Tab labels
       settings : String
-    , scores : String
     , whiteCards : String
     , blackCards : String
     , help : String
@@ -64,7 +63,6 @@ getTranslations language =
 englishTranslations : Translations
 englishTranslations =
     { settings = "Settings"
-    , scores = "Scores"
     , whiteCards = "White Cards"
     , blackCards = "Black Cards"
     , help = "Help"
@@ -95,7 +93,6 @@ englishTranslations =
 spanishTranslations : Translations
 spanishTranslations =
     { settings = "Configuración"
-    , scores = "Puntos"
     , whiteCards = "Cartas Blancas"
     , blackCards = "Cartas Negras"
     , help = "Ayuda"
@@ -126,7 +123,6 @@ spanishTranslations =
 polishTranslations : Translations
 polishTranslations =
     { settings = "Ustawienia"
-    , scores = "Punkty"
     , whiteCards = "Białe Karty"
     , blackCards = "Czarne Karty"
     , help = "Pomoc"

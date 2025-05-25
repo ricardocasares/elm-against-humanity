@@ -575,7 +575,7 @@ view model =
             [ tabs [ class "font-bold tabs-sm" ]
                 [ tab [ active model.route Settings, onClick (TabClicked Settings) ] [ I.wrench I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Help, onClick (TabClicked Help) ] [ I.question I.Regular |> I.toHtml [] ]
-                , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ text t.scores ]
+                , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ I.trophy I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text t.whiteCards ]
                 , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text t.blackCards ]
                 ]
