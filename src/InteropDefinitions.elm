@@ -1,7 +1,7 @@
 module InteropDefinitions exposing (Flags, FromElm(..), ToElm(..), interop)
 
 import TsJson.Codec as Codec exposing (Codec)
-import TsJson.Decode as TD exposing (Decoder)
+import TsJson.Decode as Decode exposing (Decoder)
 import TsJson.Encode exposing (Encoder)
 
 
@@ -18,12 +18,14 @@ interop =
 
 
 type alias Flags =
-    {}
+    { basePath : String
+    }
 
 
 flags : Decoder Flags
 flags =
-    TD.null {}
+    Decode.map Flags
+        (Decode.field "basePath" Decode.string)
 
 
 type ToElm

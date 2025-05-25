@@ -2,7 +2,12 @@ import { Elm } from "./Main.elm";
 import { match } from "ts-pattern";
 
 export const node = document.getElementById("app");
-export const app = Elm.Main.init({ node, flags: null });
+export const app = Elm.Main.init({
+  node,
+  flags: {
+    basePath: window.location.pathname + "/",
+  },
+});
 const send = app.ports.interopToElm.send;
 
 app.ports.interopFromElm.subscribe((msg) =>

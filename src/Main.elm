@@ -56,6 +56,7 @@ type alias Model =
     , selectedBlackCard : Bool
     , selectedWhiteCard : Bool
     , touchState : TouchState
+    , basePath : String
     }
 
 
@@ -204,8 +205,8 @@ deckDecoder =
         (Decode.field "white" (Decode.list Decode.string))
 
 
-getDeck : Language -> Cmd Msg
-getDeck language =
+getDeck : String -> Language -> Cmd Msg
+getDeck basePath language =
     let
         deckFile : String
         deckFile =
@@ -220,12 +221,12 @@ getDeck language =
                     "deck-pl.json"
     in
     Http.get
-        { url = "/elm-against-humanity/" ++ deckFile
+        { url = basePath ++ deckFile
         , expect = Http.expectJson GotDeck deckDecoder
         }
 
 
-main : Program () Model Msg
+main : Program IO.Flags Model Msg
 main =
     Browser.element
         { init = init
@@ -263,8 +264,8 @@ subscriptions _ =
             )
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : IO.Flags -> ( Model, Cmd Msg )
+init flags =
     ( { route = Blacks
       , deck = Nothing
       , state = Loading
@@ -286,6 +287,7 @@ init _ =
       , selectedBlackCard = False
       , selectedWhiteCard = False
       , touchState = initialTouchState
+      , basePath = flags.basePath
       }
     , Cmd.batch [ IO.fromElm IO.DetectLanguage, IO.fromElm IO.WakeLockCheck ]
     )
@@ -327,7 +329,7 @@ update msg model =
                 newModel =
                     { model | currentLanguage = detectedLanguage }
             in
-            ( { newModel | state = Loading }, getDeck detectedLanguage )
+            ( { newModel | state = Loading }, getDeck model.basePath detectedLanguage )
 
         LanguageChanged language ->
             let
@@ -337,7 +339,7 @@ update msg model =
             in
             ( { newModel | state = Loading }
             , Cmd.batch
-                [ getDeck language
+                [ getDeck model.basePath language
                 , IO.fromElm (IO.SaveLanguagePreference (languageToString language))
                 ]
             )
@@ -819,7 +821,7 @@ screen_whites _ (Zip.Zipper _ curr _) model =
         cardClasses : String
         cardClasses =
             if model.selectedWhiteCard then
-                "bg-white text-black border-3 border-secondary shadow-lg"
+                "bg-white text-black border-4 border-secondary shadow-lg"
 
             else
                 "bg-white text-black"
@@ -848,7 +850,7 @@ screen_blacks _ (Zip.Zipper _ curr _) model =
         cardClasses : String
         cardClasses =
             if model.selectedBlackCard then
-                "bg-black text-white border-3 border-secondary shadow-lg"
+                "bg-black text-white border-4 border-secondary shadow-lg"
 
             else
                 "bg-black text-white"
@@ -874,7 +876,7 @@ screen_blacks _ (Zip.Zipper _ curr _) model =
 card : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 card attrs content =
     div
-        (List.append [ class "p-6 border-3 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto", lang "en" ] attrs)
+        (List.append [ class "p-6 border-4 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto", lang "en" ] attrs)
         content
 
 

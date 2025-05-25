@@ -38,6 +38,7 @@ testModel =
         , currentY = 0
         , isActive = False
         }
+    , basePath = "/"
     }
 
 

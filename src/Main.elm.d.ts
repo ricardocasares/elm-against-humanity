@@ -25,7 +25,7 @@ export type FromElm = { language : string; tag : "SaveLanguagePreference" } | { 
 
 export type ToElm = { language : string; tag : "LanguageDetected" } | { error : string; tag : "WakeLockError" } | { tag : "WakeLockReleased" } | { tag : "WakeLockAcquired" } | { tag : "WakeLockAvailable" };
 
-export type Flags = null;
+export type Flags = { basePath : string };
 
 export namespace Main {
   function init(options: { node?: HTMLElement | null; flags: Flags }): ElmApp;
