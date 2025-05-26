@@ -221,7 +221,7 @@ getDeck basePath language =
                     "deck-pl.json"
     in
     Http.get
-        { url = String.join "/" [ basePath, deckFile ]
+        { url = basePath ++ deckFile
         , expect = Http.expectJson GotDeck deckDecoder
         }
 
@@ -658,8 +658,6 @@ helpScreen model =
                 ]
             , div [ class "divider" ] []
             , h4 [ class "text-xl font-semibold" ] [ text t.scoring ]
-            , div [ class "text-base leading-relaxed" ]
-                [ text "Players earn points by having their white cards chosen by the Card Czar. The game continues until players decide to stop, and the player with the most points wins!" ]
             ]
         ]
 
