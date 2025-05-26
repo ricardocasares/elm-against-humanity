@@ -1,4 +1,4 @@
-module Translations exposing (Language(..), Translations, languageFromString, languageToString, translate)
+module Translations exposing (Language(..), Translations, englishTranslations, languageFromString, languageToString, translate)
 
 
 type Language

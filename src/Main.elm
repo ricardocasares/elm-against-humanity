@@ -11,7 +11,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Phosphor as I
 import Random
 import Random.List
-import Translations exposing (Language(..), Translations, languageFromString, languageToString, translate)
+import Translations as T
 import ZipList as Zip exposing (ZipList(..))
 
 
@@ -50,9 +50,9 @@ type alias Model =
     , players : List Player
     , nextPlayerId : Int
     , wakeLockStatus : WakeLockStatus
-    , currentLanguage : Language
-    , selectedBlackCard : Bool
-    , selectedWhiteCard : Bool
+    , currentLanguage : T.Language
+    , i18n : T.Translations
+    , cardSelected : Bool
     , touchState : TouchState
     , basePath : String
     }
@@ -162,10 +162,11 @@ type Msg
     | WakeLockReleased
     | WakeLockError String
     | LanguageDetected String
-    | LanguageChanged Language
+    | LanguageChanged T.Language
     | TouchStart Float Float
     | TouchMove Float Float
     | TouchEnd
+    | CardSelected
     | NoOp
 
 
@@ -191,19 +192,19 @@ deckDecoder =
         (Decode.field "white" (Decode.list Decode.string))
 
 
-getDeck : String -> Language -> Cmd Msg
+getDeck : String -> T.Language -> Cmd Msg
 getDeck basePath language =
     let
         deckFile : String
         deckFile =
             case language of
-                English ->
+                T.English ->
                     "deck-en.json"
 
-                Spanish ->
+                T.Spanish ->
                     "deck-es.json"
 
-                Polish ->
+                T.Polish ->
                     "deck-pl.json"
     in
     Http.get
@@ -268,11 +269,11 @@ init flags =
             ]
       , nextPlayerId = 3
       , wakeLockStatus = WakeLockUnknown
-      , currentLanguage = Spanish
-      , selectedBlackCard = False
-      , selectedWhiteCard = False
+      , currentLanguage = T.English
+      , cardSelected = False
       , touchState = initialTouchState
       , basePath = flags.basePath
+      , i18n = T.englishTranslations
       }
     , Cmd.batch [ IO.fromElm IO.DetectLanguage, IO.fromElm IO.WakeLockCheck ]
       -- , Cmd.none
@@ -307,22 +308,22 @@ update msg model =
 
         LanguageDetected languageString ->
             let
-                detected : Language
+                detected : T.Language
                 detected =
-                    languageFromString languageString
+                    T.languageFromString languageString
             in
-            ( { model | currentLanguage = detected }, getDeck model.basePath detected )
+            ( { model | currentLanguage = detected, i18n = T.translate detected }, getDeck model.basePath detected )
 
         LanguageChanged language ->
             ( { model | currentLanguage = language }
             , Cmd.batch
                 [ getDeck model.basePath language
-                , IO.fromElm (IO.SaveLanguagePreference (languageToString language))
+                , IO.fromElm (IO.SaveLanguagePreference (T.languageToString language))
                 ]
             )
 
         TabClicked route ->
-            ( { model | route = route }, Cmd.none )
+            ( { model | route = route, cardSelected = False }, Cmd.none )
 
         NextBlack ->
             ( { model | blacks = Maybe.map Zip.forward model.blacks }, Cmd.none )
@@ -342,7 +343,7 @@ update msg model =
                     ( { model | deck = DeckLoaded }, randomize data )
 
                 Err _ ->
-                    ( { model | deck = DeckLoadingError (translate model.currentLanguage).error }
+                    ( { model | deck = DeckLoadingError (T.translate model.currentLanguage).error }
                     , Cmd.none
                     )
 
@@ -451,28 +452,28 @@ update msg model =
                 ( newModel, cmd ) =
                     case ( swipeDirection, model.route ) of
                         ( Just SwipeLeft, Blacks ) ->
-                            if not model.selectedBlackCard then
+                            if not model.cardSelected then
                                 update NextBlack model
 
                             else
                                 ( model, Cmd.none )
 
                         ( Just SwipeRight, Blacks ) ->
-                            if not model.selectedBlackCard then
+                            if not model.cardSelected then
                                 update PrevBlack model
 
                             else
                                 ( model, Cmd.none )
 
                         ( Just SwipeLeft, Whites ) ->
-                            if not model.selectedWhiteCard then
+                            if not model.cardSelected then
                                 update NextWhite model
 
                             else
                                 ( model, Cmd.none )
 
                         ( Just SwipeRight, Whites ) ->
-                            if not model.selectedWhiteCard then
+                            if not model.cardSelected then
                                 update PrevWhite model
 
                             else
@@ -482,6 +483,9 @@ update msg model =
                             ( model, Cmd.none )
             in
             ( { newModel | touchState = initialTouchState }, cmd )
+
+        CardSelected ->
+            ( { model | cardSelected = not model.cardSelected }, Cmd.none )
 
 
 randomize : Deck -> Cmd Msg
@@ -517,19 +521,14 @@ errorCard error =
 
 view : Model -> Html Msg
 view model =
-    let
-        t : Translations.Translations
-        t =
-            translate model.currentLanguage
-    in
     div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ div [ class "w-full flex items-center justify-end" ]
             [ tabs [ class "font-bold tabs-sm" ]
                 [ tab [ active model.route Settings, onClick (TabClicked Settings) ] [ I.wrench I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Help, onClick (TabClicked Help) ] [ I.question I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ I.trophy I.Regular |> I.toHtml [] ]
-                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text t.whiteCards ]
-                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text t.blackCards ]
+                , tab [ active model.route Whites, onClick (TabClicked Whites) ] [ text model.i18n.whiteCards ]
+                , tab [ active model.route Blacks, onClick (TabClicked Blacks) ] [ text model.i18n.blackCards ]
                 ]
             ]
         , case model.route of
@@ -541,7 +540,16 @@ view model =
                                 errorCard "Black cards was Nothing"
 
                             Just (Zipper _ curr _) ->
-                                card [ class "bg-black flex-1" ] [ text curr ]
+                                let
+                                    selected : Html.Attribute msg
+                                    selected =
+                                        if model.cardSelected then
+                                            class "border-4 border-secondary"
+
+                                        else
+                                            class ""
+                                in
+                                card [ class "bg-black flex-1", selected ] [ text curr ]
 
                     DeckLoading ->
                         loadingSkeleton
@@ -552,12 +560,21 @@ view model =
             Whites ->
                 case model.deck of
                     DeckLoaded ->
-                        case model.blacks of
+                        case model.whites of
                             Nothing ->
-                                errorCard "Black cards was Nothing"
+                                errorCard "White cards was Nothing"
 
                             Just (Zipper _ curr _) ->
-                                card [ class "bg-black flex-1" ] [ text curr ]
+                                let
+                                    selected : Html.Attribute msg
+                                    selected =
+                                        if model.cardSelected then
+                                            class "border-4 border-secondary"
+
+                                        else
+                                            class ""
+                                in
+                                card [ class "bg-white text-black flex-1", selected ] [ text curr ]
 
                     DeckLoading ->
                         loadingSkeleton
@@ -566,7 +583,7 @@ view model =
                         errorCard error
 
             Scores ->
-                screen model
+                scoresScreen model
 
             Settings ->
                 screen model
@@ -576,48 +593,95 @@ view model =
         ]
 
 
+scoresScreen : Model -> Html Msg
+scoresScreen model =
+    div [ class "flex flex-col gap-2 flex-1 w-full" ]
+        [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
+            [ div [ class "flex flex-col gap-4" ]
+                (List.map
+                    (\player ->
+                        div [ class "flex items-center gap-4" ]
+                            [ div [ class ("w-8 h-8 rounded-full shadow-inner " ++ player.color) ] []
+                            , div [ class "flex-1" ]
+                                [ input
+                                    [ type_ "range"
+                                    , class "range range-primary w-full"
+                                    , A.min "0"
+                                    , A.max "10"
+                                    , value (String.fromInt player.score)
+                                    , onInput (UpdatePlayerScore player.id)
+                                    ]
+                                    []
+                                ]
+                            , div [ class "text-2xl font-bold min-w-[2ch] text-center" ] [ text (String.fromInt player.score) ]
+                            , button
+                                [ class "btn btn-sm btn-error btn-circle"
+                                , onClick (RemovePlayer player.id)
+                                , disabled (List.length model.players <= 2)
+                                ]
+                                [ text "×" ]
+                            ]
+                    )
+                    model.players
+                )
+            ]
+        , div [ class "w-full flex justify-between gap-4" ]
+            [ button
+                [ class "btn btn-warning btn-sm"
+                , onClick ResetScores
+                ]
+                [ text model.i18n.reset ]
+            , button
+                [ class "btn btn-sm btn-primary gap-2 self-center"
+                , onClick AddPlayer
+                , if List.length model.players < 10 then
+                    disabled False
+
+                  else
+                    disabled True
+                ]
+                [ text model.i18n.add ]
+            ]
+        ]
+
+
 helpScreen : Model -> Html Msg
 helpScreen model =
-    let
-        t : Translations
-        t =
-            translate model.currentLanguage
-    in
     div [ class "flex flex-col gap-6 flex-1 w-full" ]
         [ div [ class "bg-base-300 rounded-box p-6 flex flex-col gap-4" ]
-            [ h3 [ class "text-3xl font-bold" ] [ text t.howToPlay ]
+            [ h3 [ class "text-3xl font-bold" ] [ text model.i18n.howToPlay ]
             , div [ class "text-lg leading-relaxed" ]
-                [ text t.gameOverview ]
+                [ text model.i18n.gameOverview ]
             , div [ class "divider" ] []
-            , h4 [ class "text-xl font-semibold" ] [ text t.playerRoles ]
+            , h4 [ class "text-xl font-semibold" ] [ text model.i18n.playerRoles ]
             , div [ class "text-base leading-relaxed" ]
-                [ text t.czarRole ]
+                [ text model.i18n.czarRole ]
             , div [ class "divider" ] []
-            , h4 [ class "text-xl font-semibold" ] [ text t.gameplaySteps ]
+            , h4 [ class "text-xl font-semibold" ] [ text model.i18n.gameplaySteps ]
             , div [ class "flex flex-col gap-3" ]
                 [ div [ class "flex items-start gap-3" ]
                     [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "1" ]
-                    , div [ class "text-base leading-relaxed" ] [ text t.czarReadsCard ]
+                    , div [ class "text-base leading-relaxed" ] [ text model.i18n.czarReadsCard ]
                     ]
                 , div [ class "flex items-start gap-3" ]
                     [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "2" ]
-                    , div [ class "text-base leading-relaxed" ] [ text t.playersSelectCards ]
+                    , div [ class "text-base leading-relaxed" ] [ text model.i18n.playersSelectCards ]
                     ]
                 , div [ class "flex items-start gap-3" ]
                     [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "3" ]
-                    , div [ class "text-base leading-relaxed" ] [ text t.playersGivePhones ]
+                    , div [ class "text-base leading-relaxed" ] [ text model.i18n.playersGivePhones ]
                     ]
                 , div [ class "flex items-start gap-3" ]
                     [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "4" ]
-                    , div [ class "text-base leading-relaxed" ] [ text t.czarPicksBest ]
+                    , div [ class "text-base leading-relaxed" ] [ text model.i18n.czarPicksBest ]
                     ]
                 , div [ class "flex items-start gap-3" ]
                     [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "5" ]
-                    , div [ class "text-base leading-relaxed" ] [ text t.pointAwarded ]
+                    , div [ class "text-base leading-relaxed" ] [ text model.i18n.pointAwarded ]
                     ]
                 , div [ class "flex items-start gap-3" ]
                     [ div [ class "badge badge-primary font-bold min-w-[2rem]" ] [ text "6" ]
-                    , div [ class "text-base leading-relaxed" ] [ text t.newRoundStarts ]
+                    , div [ class "text-base leading-relaxed" ] [ text model.i18n.newRoundStarts ]
                     ]
                 ]
             ]
@@ -651,7 +715,7 @@ wakeLockButton model =
     input (attrs ++ [ type_ "checkbox" ]) [ I.screencast I.Regular |> I.toHtml [] ]
 
 
-languageSelector : Language -> Html Msg
+languageSelector : T.Language -> Html Msg
 languageSelector currentLanguage =
     Html.select
         [ class "select select-bordered w-fit"
@@ -659,13 +723,13 @@ languageSelector currentLanguage =
             (\selectedValue ->
                 case selectedValue of
                     "en" ->
-                        LanguageChanged English
+                        LanguageChanged T.English
 
                     "es" ->
-                        LanguageChanged Spanish
+                        LanguageChanged T.Spanish
 
                     "pl" ->
-                        LanguageChanged Polish
+                        LanguageChanged T.Polish
 
                     _ ->
                         NoOp
@@ -673,17 +737,17 @@ languageSelector currentLanguage =
         ]
         [ option
             [ A.value "en"
-            , A.selected (currentLanguage == English)
+            , A.selected (currentLanguage == T.English)
             ]
             [ text "English" ]
         , Html.option
             [ A.value "es"
-            , A.selected (currentLanguage == Spanish)
+            , A.selected (currentLanguage == T.Spanish)
             ]
             [ text "Español" ]
         , Html.option
             [ A.value "pl"
-            , A.selected (currentLanguage == Polish)
+            , A.selected (currentLanguage == T.Polish)
             ]
             [ text "Polski" ]
         ]
@@ -691,11 +755,6 @@ languageSelector currentLanguage =
 
 screen : Model -> Html Msg
 screen model =
-    let
-        t : Translations
-        t =
-            translate model.currentLanguage
-    in
     case model.route of
         Scores ->
             div [ class "flex flex-col gap-2 flex-1 w-full" ]
@@ -733,7 +792,7 @@ screen model =
                         [ class "btn btn-warning btn-sm"
                         , onClick ResetScores
                         ]
-                        [ text t.reset ]
+                        [ text model.i18n.reset ]
                     , button
                         [ class "btn btn-sm btn-primary gap-2 self-center"
                         , onClick AddPlayer
@@ -743,21 +802,21 @@ screen model =
                           else
                             disabled True
                         ]
-                        [ text t.add ]
+                        [ text model.i18n.add ]
                     ]
                 ]
 
         Settings ->
             div [ class "flex flex-col gap-2 flex-1 w-full" ]
                 [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
-                    [ h3 [ class "text-3xl font-bold mb-10" ] [ text t.settings ]
+                    [ h3 [ class "text-3xl font-bold mb-10" ] [ text model.i18n.settings ]
                     , div [ class "flex flex-col gap-4" ]
                         [ label [ class "flex items-center justify-between w-full" ]
-                            [ text t.selectLanguage
+                            [ text model.i18n.selectLanguage
                             , languageSelector model.currentLanguage
                             ]
                         , label [ class "flex items-center justify-between w-full" ]
-                            [ text t.preventScreenDimming
+                            [ text model.i18n.preventScreenDimming
                             , wakeLockButton model
                             ]
                         ]
@@ -781,6 +840,7 @@ card attrs content =
         (List.append
             [ class "p-6 border-4 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto"
             , lang "en"
+            , onClick CardSelected
             , onTouchStart TouchStart
             , onTouchMove TouchMove
             , onTouchEnd TouchEnd

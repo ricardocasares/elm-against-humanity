@@ -5,7 +5,7 @@ import Main exposing (Model, RemoteDeck(..), Route(..), WakeLockStatus(..), view
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, disabled, tag, text)
-import Translations exposing (Language(..))
+import Translations as T
 import ZipList as Zip
 
 
@@ -27,9 +27,9 @@ testModel =
         ]
     , nextPlayerId = 3
     , wakeLockStatus = WakeLockUnknown
-    , currentLanguage = English
-    , selectedBlackCard = False
-    , selectedWhiteCard = False
+    , currentLanguage = T.English
+    , i18n = T.englishTranslations
+    , cardSelected = False
     , touchState =
         { startX = 0
         , startY = 0
