@@ -5,7 +5,7 @@ export const node = document.getElementById("app");
 export const app = Elm.Main.init({
   node,
   flags: {
-    basePath: window.location.pathname.replace(/^\/(?!$)(.*?)(\/?)$/, "/$1/"),
+    basePath: import.meta.env.BASE_URL!.replace(/^\/(?!$)(.*?)(\/?)$/, "/$1/"),
   },
 });
 const send = app.ports.interopToElm.send;
