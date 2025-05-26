@@ -586,7 +586,21 @@ view model =
                 scoresScreen model
 
             Settings ->
-                screen model
+                div [ class "flex flex-col gap-2 flex-1 w-full" ]
+                    [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
+                        [ h3 [ class "text-3xl font-bold mb-10" ] [ text model.i18n.settings ]
+                        , div [ class "flex flex-col gap-4" ]
+                            [ label [ class "flex items-center justify-between w-full" ]
+                                [ text model.i18n.selectLanguage
+                                , languageSelector model.currentLanguage
+                                ]
+                            , label [ class "flex items-center justify-between w-full" ]
+                                [ text model.i18n.preventScreenDimming
+                                , wakeLockButton model
+                                ]
+                            ]
+                        ]
+                    ]
 
             Help ->
                 helpScreen model
@@ -751,87 +765,6 @@ languageSelector currentLanguage =
             ]
             [ text "Polski" ]
         ]
-
-
-screen : Model -> Html Msg
-screen model =
-    case model.route of
-        Scores ->
-            div [ class "flex flex-col gap-2 flex-1 w-full" ]
-                [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
-                    [ div [ class "flex flex-col gap-4" ]
-                        (List.map
-                            (\player ->
-                                div [ class "flex items-center gap-4" ]
-                                    [ div [ class ("w-8 h-8 rounded-full shadow-inner " ++ player.color) ] []
-                                    , div [ class "flex-1" ]
-                                        [ input
-                                            [ type_ "range"
-                                            , class "range range-primary w-full"
-                                            , A.min "0"
-                                            , A.max "10"
-                                            , value (String.fromInt player.score)
-                                            , onInput (UpdatePlayerScore player.id)
-                                            ]
-                                            []
-                                        ]
-                                    , div [ class "text-2xl font-bold min-w-[2ch] text-center" ] [ text (String.fromInt player.score) ]
-                                    , button
-                                        [ class "btn btn-sm btn-error btn-circle"
-                                        , onClick (RemovePlayer player.id)
-                                        , disabled (List.length model.players <= 2)
-                                        ]
-                                        [ text "×" ]
-                                    ]
-                            )
-                            model.players
-                        )
-                    ]
-                , div [ class "w-full flex justify-between gap-4" ]
-                    [ button
-                        [ class "btn btn-warning btn-sm"
-                        , onClick ResetScores
-                        ]
-                        [ text model.i18n.reset ]
-                    , button
-                        [ class "btn btn-sm btn-primary gap-2 self-center"
-                        , onClick AddPlayer
-                        , if List.length model.players < 10 then
-                            disabled False
-
-                          else
-                            disabled True
-                        ]
-                        [ text model.i18n.add ]
-                    ]
-                ]
-
-        Settings ->
-            div [ class "flex flex-col gap-2 flex-1 w-full" ]
-                [ div [ class "bg-base-300 rounded-box flex-1 w-full p-6 flex flex-col" ]
-                    [ h3 [ class "text-3xl font-bold mb-10" ] [ text model.i18n.settings ]
-                    , div [ class "flex flex-col gap-4" ]
-                        [ label [ class "flex items-center justify-between w-full" ]
-                            [ text model.i18n.selectLanguage
-                            , languageSelector model.currentLanguage
-                            ]
-                        , label [ class "flex items-center justify-between w-full" ]
-                            [ text model.i18n.preventScreenDimming
-                            , wakeLockButton model
-                            ]
-                        ]
-                    ]
-                ]
-
-        -- These cases should never be reached as they're handled in the main view
-        Whites ->
-            div [] []
-
-        Blacks ->
-            div [] []
-
-        Help ->
-            div [] []
 
 
 card : List (Html.Attribute Msg) -> List (Html Msg) -> Html Msg
