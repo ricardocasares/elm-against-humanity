@@ -572,7 +572,7 @@ view model =
     in
     div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ div [ class "w-full flex items-center justify-end" ]
-            [ tabs [ class "font-bold tabs-md" ]
+            [ tabs [ class "font-bold tabs-sm" ]
                 [ tab [ active model.route Settings, onClick (TabClicked Settings) ] [ I.wrench I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Help, onClick (TabClicked Help) ] [ I.question I.Regular |> I.toHtml [] ]
                 , tab [ active model.route Scores, onClick (TabClicked Scores) ] [ I.trophy I.Regular |> I.toHtml [] ]
