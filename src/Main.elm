@@ -1,8 +1,8 @@
 module Main exposing (Deck, Model, Msg(..), Player, RemoteDeck(..), Route(..), TouchState, WakeLockStatus(..), main, view)
 
 import Browser
-import Html exposing (Html, button, div, h3, h4, input, label, text)
-import Html.Attributes exposing (attribute, checked, class, disabled, lang, title, type_, value)
+import Html exposing (Html, button, div, h3, h4, input, label, option, text)
+import Html.Attributes as A exposing (attribute, checked, class, disabled, lang, title, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
 import Http
 import InteropDefinitions as IO
@@ -671,19 +671,19 @@ languageSelector currentLanguage =
                         NoOp
             )
         ]
-        [ Html.option
-            [ Html.Attributes.value "en"
-            , Html.Attributes.selected (currentLanguage == English)
+        [ option
+            [ A.value "en"
+            , A.selected (currentLanguage == English)
             ]
             [ text "English" ]
         , Html.option
-            [ Html.Attributes.value "es"
-            , Html.Attributes.selected (currentLanguage == Spanish)
+            [ A.value "es"
+            , A.selected (currentLanguage == Spanish)
             ]
             [ text "Español" ]
         , Html.option
-            [ Html.Attributes.value "pl"
-            , Html.Attributes.selected (currentLanguage == Polish)
+            [ A.value "pl"
+            , A.selected (currentLanguage == Polish)
             ]
             [ text "Polski" ]
         ]
@@ -709,8 +709,8 @@ screen model =
                                         [ input
                                             [ type_ "range"
                                             , class "range range-primary w-full"
-                                            , Html.Attributes.min "0"
-                                            , Html.Attributes.max "10"
+                                            , A.min "0"
+                                            , A.max "10"
                                             , value (String.fromInt player.score)
                                             , onInput (UpdatePlayerScore player.id)
                                             ]
