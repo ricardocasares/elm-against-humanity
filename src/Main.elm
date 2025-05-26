@@ -1,4 +1,4 @@
-module Main exposing (Deck, DeckState(..), Model, Msg(..), Player, Route(..), TouchState, WakeLockStatus(..), main, view)
+module Main exposing (Deck, Model, Msg(..), Player, RemoteDeck(..), Route(..), TouchState, WakeLockStatus(..), main, view)
 
 import Browser
 import Html exposing (Html, button, div, h3, h4, input, label, text)
@@ -11,8 +11,8 @@ import Json.Decode as Decode exposing (Decoder)
 import Phosphor as I
 import Random
 import Random.List
-import Translations exposing (Language(..), Translations, getTranslations, languageFromString, languageToString)
-import ZipList as Zip
+import Translations exposing (Language(..), Translations, languageFromString, languageToString, translate)
+import ZipList as Zip exposing (ZipList(..))
 
 
 type Route
@@ -29,11 +29,10 @@ type alias Deck =
     }
 
 
-type DeckState
-    = Loading
-    | ShufflingCards
-    | Loaded
-    | Failed String
+type RemoteDeck
+    = DeckLoaded
+    | DeckLoading
+    | DeckLoadingError String
 
 
 type alias Player =
@@ -45,8 +44,7 @@ type alias Player =
 
 type alias Model =
     { route : Route
-    , state : DeckState
-    , deck : Maybe Deck
+    , deck : RemoteDeck
     , blacks : Maybe (Zip.ZipList String)
     , whites : Maybe (Zip.ZipList String)
     , players : List Player
@@ -76,16 +74,6 @@ type WakeLockStatus
     | WakeLockActive
     | WakeLockInactive
     | WakeLockFailed String
-
-
-listToZipList : List a -> Maybe (Zip.ZipList a)
-listToZipList list =
-    case list of
-        head :: tail ->
-            Just (Zip.new head tail)
-
-        [] ->
-            Nothing
 
 
 type SwipeDirection
@@ -162,7 +150,7 @@ type Msg
     | PrevBlack
     | NextWhite
     | PrevWhite
-    | GotDeck (Result Http.Error Deck)
+    | RemoteDeckLoaded (Result Http.Error Deck)
     | ShuffledCards (List String) (List String)
     | AddPlayer
     | RemovePlayer Int
@@ -175,8 +163,6 @@ type Msg
     | WakeLockError String
     | LanguageDetected String
     | LanguageChanged Language
-    | BlackCardClicked
-    | WhiteCardClicked
     | TouchStart Float Float
     | TouchMove Float Float
     | TouchEnd
@@ -222,7 +208,7 @@ getDeck basePath language =
     in
     Http.get
         { url = basePath ++ deckFile
-        , expect = Http.expectJson GotDeck deckDecoder
+        , expect = Http.expectJson RemoteDeckLoaded deckDecoder
         }
 
 
@@ -267,8 +253,7 @@ subscriptions _ =
 init : IO.Flags -> ( Model, Cmd Msg )
 init flags =
     ( { route = Blacks
-      , deck = Nothing
-      , state = Loading
+      , deck = DeckLoading
       , blacks = Nothing
       , whites = Nothing
       , players =
@@ -290,6 +275,7 @@ init flags =
       , basePath = flags.basePath
       }
     , Cmd.batch [ IO.fromElm IO.DetectLanguage, IO.fromElm IO.WakeLockCheck ]
+      -- , Cmd.none
     )
 
 
@@ -321,23 +307,14 @@ update msg model =
 
         LanguageDetected languageString ->
             let
-                detectedLanguage : Language
-                detectedLanguage =
+                detected : Language
+                detected =
                     languageFromString languageString
-
-                newModel : Model
-                newModel =
-                    { model | currentLanguage = detectedLanguage }
             in
-            ( { newModel | state = Loading }, getDeck model.basePath detectedLanguage )
+            ( { model | currentLanguage = detected }, getDeck model.basePath detected )
 
         LanguageChanged language ->
-            let
-                newModel : Model
-                newModel =
-                    { model | currentLanguage = language }
-            in
-            ( { newModel | state = Loading }
+            ( { model | currentLanguage = language }
             , Cmd.batch
                 [ getDeck model.basePath language
                 , IO.fromElm (IO.SaveLanguagePreference (languageToString language))
@@ -359,31 +336,20 @@ update msg model =
         PrevWhite ->
             ( { model | whites = Maybe.map Zip.backward model.whites }, Cmd.none )
 
-        GotDeck result ->
+        RemoteDeckLoaded result ->
             case result of
-                Ok loadedDeck ->
-                    ( { model
-                        | state = ShufflingCards
-                        , deck = Just loadedDeck
-                      }
-                    , Random.generate
-                        (\( blacks, whites ) -> ShuffledCards blacks whites)
-                        (Random.map2 Tuple.pair
-                            (Random.List.shuffle loadedDeck.blacks |> Random.map (List.take 40))
-                            (Random.List.shuffle loadedDeck.whites |> Random.map (List.take 40))
-                        )
-                    )
+                Ok data ->
+                    ( { model | deck = DeckLoaded }, randomize data )
 
                 Err _ ->
-                    ( { model | state = Failed (getTranslations model.currentLanguage).error }
+                    ( { model | deck = DeckLoadingError (translate model.currentLanguage).error }
                     , Cmd.none
                     )
 
         ShuffledCards blacks whites ->
             ( { model
-                | state = Loaded
-                , blacks = listToZipList blacks
-                , whites = listToZipList whites
+                | blacks = Zip.fromList blacks
+                , whites = Zip.fromList whites
               }
             , Cmd.none
             )
@@ -445,12 +411,6 @@ update msg model =
               }
             , Cmd.none
             )
-
-        BlackCardClicked ->
-            ( { model | selectedBlackCard = not model.selectedBlackCard }, Cmd.none )
-
-        WhiteCardClicked ->
-            ( { model | selectedWhiteCard = not model.selectedWhiteCard }, Cmd.none )
 
         TouchStart x y ->
             ( { model
@@ -524,22 +484,14 @@ update msg model =
             ( { newModel | touchState = initialTouchState }, cmd )
 
 
-{-| Helper function to render loading states for card screens (Blacks/Whites)
--}
-renderCardScreen : DeckState -> Html Msg -> Html Msg
-renderCardScreen state loadedContent =
-    case state of
-        Loading ->
-            loadingSkeleton
-
-        ShufflingCards ->
-            loadingSkeleton
-
-        Failed error ->
-            errorCard error
-
-        Loaded ->
-            loadedContent
+randomize : Deck -> Cmd Msg
+randomize data =
+    Random.generate
+        (\( blacks, whites ) -> ShuffledCards blacks whites)
+        (Random.map2 Tuple.pair
+            (Random.List.shuffle data.blacks |> Random.map (List.take 40))
+            (Random.List.shuffle data.whites |> Random.map (List.take 40))
+        )
 
 
 {-| Skeleton loading screen
@@ -560,7 +512,7 @@ loadingSkeleton =
 errorCard : String -> Html Msg
 errorCard error =
     card [ class "bg-error rounded-box flex-1 w-full flex flex-col gap-4" ]
-        [ text ("Error: " ++ error) ]
+        [ text error ]
 
 
 view : Model -> Html Msg
@@ -568,7 +520,7 @@ view model =
     let
         t : Translations.Translations
         t =
-            getTranslations model.currentLanguage
+            translate model.currentLanguage
     in
     div [ class "flex flex-col items-center gap-2 p-4 h-dvh md:mx-auto md:w-9/12 lg:w-1/2" ]
         [ div [ class "w-full flex items-center justify-end" ]
@@ -582,24 +534,36 @@ view model =
             ]
         , case model.route of
             Blacks ->
-                renderCardScreen model.state
-                    (case model.blacks of
-                        Just blacks ->
-                            screen_blacks model.currentLanguage blacks model
+                case model.deck of
+                    DeckLoaded ->
+                        case model.blacks of
+                            Nothing ->
+                                errorCard "Black cards was Nothing"
 
-                        Nothing ->
-                            div [] [ text t.noBlackCardsLoaded ]
-                    )
+                            Just (Zipper _ curr _) ->
+                                card [ class "bg-black flex-1" ] [ text curr ]
+
+                    DeckLoading ->
+                        loadingSkeleton
+
+                    DeckLoadingError error ->
+                        errorCard error
 
             Whites ->
-                renderCardScreen model.state
-                    (case model.whites of
-                        Just whites ->
-                            screen_whites model.currentLanguage whites model
+                case model.deck of
+                    DeckLoaded ->
+                        case model.blacks of
+                            Nothing ->
+                                errorCard "Black cards was Nothing"
 
-                        Nothing ->
-                            div [] [ text t.noWhiteCardsLoaded ]
-                    )
+                            Just (Zipper _ curr _) ->
+                                card [ class "bg-black flex-1" ] [ text curr ]
+
+                    DeckLoading ->
+                        loadingSkeleton
+
+                    DeckLoadingError error ->
+                        errorCard error
 
             Scores ->
                 screen model
@@ -617,7 +581,7 @@ helpScreen model =
     let
         t : Translations
         t =
-            getTranslations model.currentLanguage
+            translate model.currentLanguage
     in
     div [ class "flex flex-col gap-6 flex-1 w-full" ]
         [ div [ class "bg-base-300 rounded-box p-6 flex flex-col gap-4" ]
@@ -730,7 +694,7 @@ screen model =
     let
         t : Translations
         t =
-            getTranslations model.currentLanguage
+            translate model.currentLanguage
     in
     case model.route of
         Scores ->
@@ -811,74 +775,19 @@ screen model =
             div [] []
 
 
-screen_whites : Language -> Zip.ZipList String -> Model -> Html Msg
-screen_whites _ (Zip.Zipper _ curr _) model =
-    let
-        cardClasses : String
-        cardClasses =
-            if model.selectedWhiteCard then
-                "bg-white text-black border-4 border-secondary shadow-lg"
-
-            else
-                "bg-white text-black"
-
-        touchEvents : List (Html.Attribute Msg)
-        touchEvents =
-            if model.selectedWhiteCard then
-                [ onClick WhiteCardClicked ]
-
-            else
-                [ onClick WhiteCardClicked
-                , onTouchStart TouchStart
-                , onTouchMove TouchMove
-                , onTouchEnd TouchEnd
-                ]
-    in
-    div [ class "flex flex-col w-full gap-2 flex-1" ]
-        [ deck [ class "flex-1 w-full" ]
-            [ card (class cardClasses :: touchEvents) [ text curr ] ]
-        ]
-
-
-screen_blacks : Language -> Zip.ZipList String -> Model -> Html Msg
-screen_blacks _ (Zip.Zipper _ curr _) model =
-    let
-        cardClasses : String
-        cardClasses =
-            if model.selectedBlackCard then
-                "bg-black text-white border-4 border-secondary shadow-lg"
-
-            else
-                "bg-black text-white"
-
-        touchEvents : List (Html.Attribute Msg)
-        touchEvents =
-            if model.selectedBlackCard then
-                [ onClick BlackCardClicked ]
-
-            else
-                [ onClick BlackCardClicked
-                , onTouchStart TouchStart
-                , onTouchMove TouchMove
-                , onTouchEnd TouchEnd
-                ]
-    in
-    div [ class "flex flex-col w-full gap-2 flex-1" ]
-        [ deck [ class "flex-1 w-full" ]
-            [ card (class cardClasses :: touchEvents) [ text curr ] ]
-        ]
-
-
-card : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+card : List (Html.Attribute Msg) -> List (Html Msg) -> Html Msg
 card attrs content =
     div
-        (List.append [ class "p-6 border-4 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto", lang "en" ] attrs)
+        (List.append
+            [ class "p-6 border-4 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto"
+            , lang "en"
+            , onTouchStart TouchStart
+            , onTouchMove TouchMove
+            , onTouchEnd TouchEnd
+            ]
+            attrs
+        )
         content
-
-
-deck : List (Html.Attribute msg) -> List (Html msg) -> Html msg
-deck attrs cards =
-    div (List.append [ class "carousel carousel-vertical rounded-box shadow" ] attrs) (List.map (\c -> div [ class "carousel-item h-full" ] [ c ]) cards)
 
 
 tabs : List (Html.Attribute msg) -> List (Html msg) -> Html msg

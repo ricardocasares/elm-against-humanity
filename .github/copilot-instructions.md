@@ -48,6 +48,7 @@ Instead, write a new RFC to think about new features that will be added to the c
 1. Overview: describes the purpose of the RFC.
 2. Goals: Clearly defined objectives that the RFC intends to achieve.
 3. Proposal: detailed explanation of the proposed changes, for example:
+   - Add step-by-step instructions.
    - Data structures, or architectural changes.
    - Changes to the current application `Model`.
    - OpenAPI yaml specifications.

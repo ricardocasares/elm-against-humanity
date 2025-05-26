@@ -1,4 +1,4 @@
-module Translations exposing (Language(..), Translations, getTranslations, languageFromString, languageToString)
+module Translations exposing (Language(..), Translations, languageFromString, languageToString, translate)
 
 
 type Language
@@ -46,8 +46,8 @@ type alias Translations =
     }
 
 
-getTranslations : Language -> Translations
-getTranslations language =
+translate : Language -> Translations
+translate language =
     case language of
         English ->
             englishTranslations
@@ -84,7 +84,7 @@ englishTranslations =
     , newRoundStarts = "A new round begins with the next player becoming the Card Czar."
     , noWhiteCardsLoaded = "No white cards loaded"
     , noBlackCardsLoaded = "No black cards loaded"
-    , error = "Error: "
+    , error = "An error occurred while loading the deck."
     }
 
 
@@ -113,7 +113,7 @@ spanishTranslations =
     , newRoundStarts = "Una nueva ronda comienza con el siguiente jugador convirtiéndose en el Zar de Cartas."
     , noWhiteCardsLoaded = "No se cargaron cartas blancas"
     , noBlackCardsLoaded = "No se cargaron cartas negras"
-    , error = "Error: "
+    , error = "Ocurrió un error cargando el mazo."
     }
 
 
@@ -142,7 +142,7 @@ polishTranslations =
     , newRoundStarts = "Nowa runda rozpoczyna się z kolejnym graczem stającym się Carem Kart."
     , noWhiteCardsLoaded = "Nie załadowano białych kart"
     , noBlackCardsLoaded = "Nie załadowano czarnych kart"
-    , error = "Błąd: "
+    , error = "Wystąpił błąd podczas ładowania talii."
     }
 
 

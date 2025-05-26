@@ -1,7 +1,7 @@
 module MainSpec exposing (suite)
 
 import Expect
-import Main exposing (DeckState(..), Model, Route(..), WakeLockStatus(..), view)
+import Main exposing (Model, RemoteDeck(..), Route(..), WakeLockStatus(..), view)
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, disabled, tag, text)
@@ -12,8 +12,7 @@ import ZipList as Zip
 testModel : Model
 testModel =
     { route = Blacks
-    , state = Loading
-    , deck = Nothing
+    , deck = DeckLoading
     , blacks = Nothing
     , whites = Nothing
     , players =
@@ -52,13 +51,13 @@ suite =
                     |> Query.has [ class "skeleton" ]
         , test "Initially has two players" <|
             \_ ->
-                view { testModel | route = Scores, state = Loaded }
+                view { testModel | route = Scores, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.findAll [ tag "input" ]
                     |> Query.count (Expect.equal 2)
         , test "Remove buttons are disabled with only two players" <|
             \_ ->
-                view { testModel | route = Scores, state = Loaded }
+                view { testModel | route = Scores, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.findAll [ tag "button", class "btn-error" ]
                     |> Query.first
@@ -68,7 +67,7 @@ suite =
                 view
                     { testModel
                         | route = Blacks
-                        , state = Loaded
+                        , deck = DeckLoaded
                         , blacks = Just (Zip.new "A black card" [])
                         , whites = Just (Zip.new "" [])
                     }
@@ -79,7 +78,7 @@ suite =
                 view
                     { testModel
                         | route = Scores
-                        , state = Loaded
+                        , deck = DeckLoaded
                         , players =
                             [ { id = 1
                               , score = 5
@@ -95,75 +94,75 @@ suite =
                     |> Query.has [ text "Reset" ]
         , test "Wake lock button is disabled when status is unknown" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockUnknown }
+                view { testModel | route = Settings, deck = DeckLoaded, wakeLockStatus = WakeLockUnknown }
                     |> Query.fromHtml
                     |> Query.find [ tag "input", class "toggle" ]
                     |> Query.has [ disabled True, class "toggle-info" ]
         , test "Wake lock button is enabled when supported" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockSupported }
+                view { testModel | route = Settings, deck = DeckLoaded, wakeLockStatus = WakeLockSupported }
                     |> Query.fromHtml
                     |> Query.find [ tag "input", class "toggle" ]
                     |> Query.has [ disabled False, class "toggle" ]
         , test "Wake lock button shows error state when not supported" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockNotSupported }
+                view { testModel | route = Settings, deck = DeckLoaded, wakeLockStatus = WakeLockNotSupported }
                     |> Query.fromHtml
                     |> Query.find [ tag "input", class "toggle" ]
                     |> Query.has [ disabled True, class "toggle-error" ]
         , test "Wake lock button is checked when active" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockActive }
+                view { testModel | route = Settings, deck = DeckLoaded, wakeLockStatus = WakeLockActive }
                     |> Query.fromHtml
                     |> Query.find [ tag "input", class "toggle" ]
                     |> Query.has [ disabled False, class "toggle-success" ]
         , test "Wake lock button is unchecked when inactive" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockInactive }
+                view { testModel | route = Settings, deck = DeckLoaded, wakeLockStatus = WakeLockInactive }
                     |> Query.fromHtml
                     |> Query.find [ tag "input", class "toggle" ]
                     |> Query.has [ disabled False, class "toggle-primary" ]
         , test "Wake lock button shows error when failed" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded, wakeLockStatus = WakeLockFailed "Error message" }
+                view { testModel | route = Settings, deck = DeckLoaded, wakeLockStatus = WakeLockFailed "Error message" }
                     |> Query.fromHtml
                     |> Query.find [ tag "input", class "toggle" ]
                     |> Query.has [ disabled True, class "toggle-error" ]
         , test "Settings view contains wake lock button" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded }
+                view { testModel | route = Settings, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.has [ tag "input", class "toggle" ]
         , test "Settings view shows prevent screen dimming label" <|
             \_ ->
-                view { testModel | route = Settings, state = Loaded }
+                view { testModel | route = Settings, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.has [ text "Prevent screen dimming" ]
         , test "Help tab is present in navigation" <|
             \_ ->
-                view { testModel | route = Help, state = Loaded }
+                view { testModel | route = Help, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.findAll [ tag "button" ]
                     |> Query.first
                     |> Query.has [ tag "button" ]
         , test "Help page displays how to play title" <|
             \_ ->
-                view { testModel | route = Help, state = Loaded }
+                view { testModel | route = Help, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.has [ text "How to Play" ]
         , test "Help page displays game instructions" <|
             \_ ->
-                view { testModel | route = Help, state = Loaded }
+                view { testModel | route = Help, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.has [ text "The Card Czar reads a black card aloud to all players." ]
         , test "Help page displays player roles section" <|
             \_ ->
-                view { testModel | route = Help, state = Loaded }
+                view { testModel | route = Help, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.has [ text "Player Roles" ]
         , test "Help page displays gameplay steps" <|
             \_ ->
-                view { testModel | route = Help, state = Loaded }
+                view { testModel | route = Help, deck = DeckLoaded }
                     |> Query.fromHtml
                     |> Query.has [ text "How to Play" ]
         ]
