@@ -1,11 +1,16 @@
 import { Elm } from "./Main.elm";
 import { match } from "ts-pattern";
 
+const basePath = import.meta.env.BASE_URL!.replace(
+  /^\/(?!$)(.*?)(\/?)$/,
+  "/$1/"
+);
+
 export const node = document.getElementById("app");
 export const app = Elm.Main.init({
   node,
   flags: {
-    basePath: import.meta.env.BASE_URL!.replace(/^\/(?!$)(.*?)(\/?)$/, "/$1/"),
+    basePath,
   },
 });
 const send = app.ports.interopToElm.send;
