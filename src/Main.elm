@@ -549,7 +549,10 @@ view model =
                                         else
                                             class ""
                                 in
-                                card [ class "bg-black flex-1", selected ] [ text curr ]
+                                card [ class "bg-black flex-1 flex flex-col", selected ]
+                                    [ div [ class "flex flex-1" ] [ text curr ]
+                                    , div [ class "self-center animate animate-pulse" ] [ I.handTap I.Regular |> I.toHtml [] ]
+                                    ]
 
                     DeckLoading ->
                         loadingSkeleton
@@ -574,7 +577,10 @@ view model =
                                         else
                                             class ""
                                 in
-                                card [ class "bg-white text-black flex-1", selected ] [ text curr ]
+                                card [ class "bg-white text-black flex-1 flex flex-col", selected ]
+                                    [ div [ class "flex flex-1" ] [ text curr ]
+                                    , div [ class "self-center animate animate-pulse" ] [ I.handTap I.Regular |> I.toHtml [] ]
+                                    ]
 
                     DeckLoading ->
                         loadingSkeleton
