@@ -1,7 +1,7 @@
 module MainSpec exposing (suite)
 
 import Expect
-import Main exposing (Model, RemoteDeck(..), Route(..), WakeLockStatus(..), view)
+import Main exposing (Model, RemoteDeck(..), Route(..), TouchState(..), WakeLockStatus(..), view)
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, disabled, tag, text)
@@ -28,15 +28,9 @@ testModel =
     , nextPlayerId = 3
     , wakeLockStatus = WakeLockUnknown
     , currentLanguage = T.English
-    , i18n = T.englishTranslations
+    , i18n = T.english
     , cardSelected = False
-    , touchState =
-        { startX = 0
-        , startY = 0
-        , currentX = 0
-        , currentY = 0
-        , isActive = False
-        }
+    , touchState = Inactive
     , basePath = "/"
     }
 

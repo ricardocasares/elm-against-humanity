@@ -1,4 +1,4 @@
-module Main exposing (Deck, Model, Msg(..), Player, RemoteDeck(..), Route(..), TouchState, WakeLockStatus(..), main, view)
+module Main exposing (Deck, Model, Msg(..), Player, RemoteDeck(..), Route(..), TouchState(..), WakeLockStatus(..), main, view)
 
 import Browser
 import Html exposing (Html, button, div, h3, h4, input, label, option, text)
@@ -11,7 +11,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Phosphor as I
 import Random
 import Random.List
-import Translations as T
+import Translations as T exposing (Language, Translations)
 import ZipList as Zip exposing (ZipList(..))
 
 
@@ -42,29 +42,9 @@ type alias Player =
     }
 
 
-type alias Model =
-    { route : Route
-    , deck : RemoteDeck
-    , blacks : Maybe (Zip.ZipList String)
-    , whites : Maybe (Zip.ZipList String)
-    , players : List Player
-    , nextPlayerId : Int
-    , wakeLockStatus : WakeLockStatus
-    , currentLanguage : T.Language
-    , i18n : T.Translations
-    , cardSelected : Bool
-    , touchState : TouchState
-    , basePath : String
-    }
-
-
-type alias TouchState =
-    { startX : Float
-    , startY : Float
-    , currentX : Float
-    , currentY : Float
-    , isActive : Bool
-    }
+type TouchState
+    = Inactive
+    | Touching { x : Float, dx : Float }
 
 
 type WakeLockStatus
@@ -81,67 +61,20 @@ type SwipeDirection
     | SwipeRight
 
 
-detectSwipe : TouchState -> Maybe SwipeDirection
-detectSwipe touch =
-    let
-        deltaX : Float
-        deltaX =
-            touch.currentX - touch.startX
-
-        deltaY : Float
-        deltaY =
-            touch.currentY - touch.startY
-
-        minSwipeDistance : Float
-        minSwipeDistance =
-            50.0
-
-        maxVerticalTolerance : Float
-        maxVerticalTolerance =
-            100.0
-    in
-    if abs deltaX > minSwipeDistance && abs deltaY < maxVerticalTolerance then
-        if deltaX > 0 then
-            Just SwipeRight
-
-        else
-            Just SwipeLeft
-
-    else
-        Nothing
-
-
-initialTouchState : TouchState
-initialTouchState =
-    { startX = 0
-    , startY = 0
-    , currentX = 0
-    , currentY = 0
-    , isActive = False
+type alias Model =
+    { route : Route
+    , deck : RemoteDeck
+    , blacks : Maybe (ZipList String)
+    , whites : Maybe (ZipList String)
+    , players : List Player
+    , nextPlayerId : Int
+    , wakeLockStatus : WakeLockStatus
+    , currentLanguage : Language
+    , i18n : Translations
+    , cardSelected : Bool
+    , touchState : TouchState
+    , basePath : String
     }
-
-
-onTouchStart : (Float -> Float -> msg) -> Html.Attribute msg
-onTouchStart msg =
-    Html.Events.on "touchstart"
-        (Decode.map2 msg
-            (Decode.at [ "touches", "0", "clientX" ] Decode.float)
-            (Decode.at [ "touches", "0", "clientY" ] Decode.float)
-        )
-
-
-onTouchMove : (Float -> Float -> msg) -> Html.Attribute msg
-onTouchMove msg =
-    Html.Events.on "touchmove"
-        (Decode.map2 msg
-            (Decode.at [ "touches", "0", "clientX" ] Decode.float)
-            (Decode.at [ "touches", "0", "clientY" ] Decode.float)
-        )
-
-
-onTouchEnd : msg -> Html.Attribute msg
-onTouchEnd msg =
-    Html.Events.on "touchend" (Decode.succeed msg)
 
 
 type Msg
@@ -162,55 +95,12 @@ type Msg
     | WakeLockReleased
     | WakeLockError String
     | LanguageDetected String
-    | LanguageChanged T.Language
-    | TouchStart Float Float
-    | TouchMove Float Float
+    | LanguageChanged Language
+    | TouchStart Float
+    | TouchMove Float
     | TouchEnd
     | CardSelected
     | NoOp
-
-
-playerColors : List String
-playerColors =
-    [ "bg-red-500"
-    , "bg-blue-500"
-    , "bg-green-500"
-    , "bg-yellow-500"
-    , "bg-purple-500"
-    , "bg-pink-500"
-    , "bg-indigo-500"
-    , "bg-orange-500"
-    , "bg-teal-500"
-    , "bg-cyan-500"
-    ]
-
-
-deckDecoder : Decoder Deck
-deckDecoder =
-    Decode.map2 Deck
-        (Decode.field "black" (Decode.list Decode.string))
-        (Decode.field "white" (Decode.list Decode.string))
-
-
-getDeck : String -> T.Language -> Cmd Msg
-getDeck basePath language =
-    let
-        deckFile : String
-        deckFile =
-            case language of
-                T.English ->
-                    "deck-en.json"
-
-                T.Spanish ->
-                    "deck-es.json"
-
-                T.Polish ->
-                    "deck-pl.json"
-    in
-    Http.get
-        { url = basePath ++ deckFile
-        , expect = Http.expectJson RemoteDeckLoaded deckDecoder
-        }
 
 
 main : Program IO.Flags Model Msg
@@ -221,34 +111,6 @@ main =
         , view = view
         , subscriptions = subscriptions
         }
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    IO.toElm
-        |> Sub.map
-            (\result ->
-                case result of
-                    Ok data ->
-                        case data of
-                            IO.WakeLockAvailable ->
-                                WakeLockAvailable
-
-                            IO.WakeLockAcquired ->
-                                WakeLockAcquired
-
-                            IO.WakeLockReleased ->
-                                WakeLockReleased
-
-                            IO.WakeLockError error ->
-                                WakeLockError error
-
-                            IO.LanguageDetected language ->
-                                LanguageDetected language
-
-                    Err _ ->
-                        NoOp
-            )
 
 
 init : IO.Flags -> ( Model, Cmd Msg )
@@ -271,12 +133,11 @@ init flags =
       , wakeLockStatus = WakeLockUnknown
       , currentLanguage = T.English
       , cardSelected = False
-      , touchState = initialTouchState
+      , touchState = Inactive
       , basePath = flags.basePath
-      , i18n = T.englishTranslations
+      , i18n = T.english
       }
     , Cmd.batch [ IO.fromElm IO.DetectLanguage, IO.fromElm IO.WakeLockCheck ]
-      -- , Cmd.none
     )
 
 
@@ -306,11 +167,11 @@ update msg model =
         WakeLockError error ->
             ( { model | wakeLockStatus = WakeLockFailed error }, Cmd.none )
 
-        LanguageDetected languageString ->
+        LanguageDetected lang ->
             let
-                detected : T.Language
+                detected : Language
                 detected =
-                    T.languageFromString languageString
+                    T.fromString lang
             in
             ( { model | currentLanguage = detected, i18n = T.translate detected }, getDeck model.basePath detected )
 
@@ -318,7 +179,7 @@ update msg model =
             ( { model | currentLanguage = language, i18n = T.translate language }
             , Cmd.batch
                 [ getDeck model.basePath language
-                , IO.fromElm (IO.SaveLanguagePreference (T.languageToString language))
+                , IO.fromElm (IO.SaveLanguagePreference (T.toString language))
                 ]
             )
 
@@ -357,13 +218,13 @@ update msg model =
 
         AddPlayer ->
             let
-                colorIndex : Int
-                colorIndex =
-                    modBy (List.length playerColors) (List.length model.players)
+                idx : Int
+                idx =
+                    modBy (List.length colors) (List.length model.players)
 
                 color : String
                 color =
-                    Maybe.withDefault "bg-gray-500" (List.head (List.drop colorIndex playerColors))
+                    Maybe.withDefault "bg-gray-500" (List.head (List.drop idx colors))
 
                 newPlayer : Player
                 newPlayer =
@@ -413,35 +274,20 @@ update msg model =
             , Cmd.none
             )
 
-        TouchStart x y ->
+        TouchStart x ->
             ( { model
-                | touchState =
-                    { startX = x
-                    , startY = y
-                    , currentX = x
-                    , currentY = y
-                    , isActive = True
-                    }
+                | touchState = Touching { x = x, dx = x }
               }
             , Cmd.none
             )
 
-        TouchMove x y ->
-            if model.touchState.isActive then
-                ( { model
-                    | touchState =
-                        { startX = model.touchState.startX
-                        , startY = model.touchState.startY
-                        , currentX = x
-                        , currentY = y
-                        , isActive = True
-                        }
-                  }
-                , Cmd.none
-                )
+        TouchMove a ->
+            case model.touchState of
+                Inactive ->
+                    ( model, Cmd.none )
 
-            else
-                ( model, Cmd.none )
+                Touching { x } ->
+                    ( { model | touchState = Touching { x = x, dx = a } }, Cmd.none )
 
         TouchEnd ->
             let
@@ -482,10 +328,131 @@ update msg model =
                         _ ->
                             ( model, Cmd.none )
             in
-            ( { newModel | touchState = initialTouchState }, cmd )
+            ( { newModel | touchState = Inactive }, cmd )
 
         CardSelected ->
             ( { model | cardSelected = not model.cardSelected }, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    IO.toElm
+        |> Sub.map
+            (\result ->
+                case result of
+                    Ok data ->
+                        case data of
+                            IO.WakeLockAvailable ->
+                                WakeLockAvailable
+
+                            IO.WakeLockAcquired ->
+                                WakeLockAcquired
+
+                            IO.WakeLockReleased ->
+                                WakeLockReleased
+
+                            IO.WakeLockError error ->
+                                WakeLockError error
+
+                            IO.LanguageDetected language ->
+                                LanguageDetected language
+
+                    Err _ ->
+                        NoOp
+            )
+
+
+detectSwipe : TouchState -> Maybe SwipeDirection
+detectSwipe touch =
+    case touch of
+        Inactive ->
+            Nothing
+
+        Touching { x, dx } ->
+            let
+                delta : Float
+                delta =
+                    dx - x
+
+                minSwipe : Float
+                minSwipe =
+                    50.0
+            in
+            if abs delta > minSwipe then
+                if delta > 0 then
+                    Just SwipeRight
+
+                else
+                    Just SwipeLeft
+
+            else
+                Nothing
+
+
+onTouchStart : (Float -> Float -> msg) -> Html.Attribute msg
+onTouchStart msg =
+    Html.Events.on "touchstart"
+        (Decode.map2 msg
+            (Decode.at [ "touches", "0", "clientX" ] Decode.float)
+            (Decode.at [ "touches", "0", "clientY" ] Decode.float)
+        )
+
+
+onTouchMove : (Float -> Float -> msg) -> Html.Attribute msg
+onTouchMove msg =
+    Html.Events.on "touchmove"
+        (Decode.map2 msg
+            (Decode.at [ "touches", "0", "clientX" ] Decode.float)
+            (Decode.at [ "touches", "0", "clientY" ] Decode.float)
+        )
+
+
+onTouchEnd : msg -> Html.Attribute msg
+onTouchEnd msg =
+    Html.Events.on "touchend" (Decode.succeed msg)
+
+
+colors : List String
+colors =
+    [ "bg-red-500"
+    , "bg-blue-500"
+    , "bg-green-500"
+    , "bg-yellow-500"
+    , "bg-purple-500"
+    , "bg-pink-500"
+    , "bg-indigo-500"
+    , "bg-orange-500"
+    , "bg-teal-500"
+    , "bg-cyan-500"
+    ]
+
+
+deckDecoder : Decoder Deck
+deckDecoder =
+    Decode.map2 Deck
+        (Decode.field "black" (Decode.list Decode.string))
+        (Decode.field "white" (Decode.list Decode.string))
+
+
+getDeck : String -> Language -> Cmd Msg
+getDeck basePath language =
+    let
+        deckFile : String
+        deckFile =
+            case language of
+                T.English ->
+                    "deck-en.json"
+
+                T.Spanish ->
+                    "deck-es.json"
+
+                T.Polish ->
+                    "deck-pl.json"
+    in
+    Http.get
+        { url = basePath ++ deckFile
+        , expect = Http.expectJson RemoteDeckLoaded deckDecoder
+        }
 
 
 randomize : Deck -> Cmd Msg
@@ -735,7 +702,7 @@ wakeLockButton model =
     input (attrs ++ [ type_ "checkbox" ]) [ I.screencast I.Regular |> I.toHtml [] ]
 
 
-languageSelector : T.Language -> Html Msg
+languageSelector : Language -> Html Msg
 languageSelector currentLanguage =
     Html.select
         [ class "select select-bordered w-fit"
@@ -780,8 +747,8 @@ card attrs content =
             [ class "p-6 border-4 border-content font-bold rounded-2xl text-4xl lg:text-5xl xl:text-6xl leading-12 lg:leading-16 xl:leading-24 w-full hyphen-auto"
             , lang "en"
             , onClick CardSelected
-            , onTouchStart TouchStart
-            , onTouchMove TouchMove
+            , onTouchStart (\x _ -> TouchStart x)
+            , onTouchMove (\x _ -> TouchMove x)
             , onTouchEnd TouchEnd
             ]
             attrs

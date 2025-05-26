@@ -1,4 +1,4 @@
-module Translations exposing (Language(..), Translations, englishTranslations, languageFromString, languageToString, translate)
+module Translations exposing (Language(..), Translations, english, fromString, toString, translate)
 
 
 type Language
@@ -50,17 +50,17 @@ translate : Language -> Translations
 translate language =
     case language of
         English ->
-            englishTranslations
+            english
 
         Spanish ->
-            spanishTranslations
+            spanish
 
         Polish ->
-            polishTranslations
+            polish
 
 
-englishTranslations : Translations
-englishTranslations =
+english : Translations
+english =
     { settings = "Settings"
     , whiteCards = "White Cards"
     , blackCards = "Black Cards"
@@ -88,8 +88,8 @@ englishTranslations =
     }
 
 
-spanishTranslations : Translations
-spanishTranslations =
+spanish : Translations
+spanish =
     { settings = "Configuración"
     , whiteCards = "Cartas Blancas"
     , blackCards = "Cartas Negras"
@@ -117,8 +117,8 @@ spanishTranslations =
     }
 
 
-polishTranslations : Translations
-polishTranslations =
+polish : Translations
+polish =
     { settings = "Ustawienia"
     , whiteCards = "Białe Karty"
     , blackCards = "Czarne Karty"
@@ -146,8 +146,8 @@ polishTranslations =
     }
 
 
-languageFromString : String -> Language
-languageFromString str =
+fromString : String -> Language
+fromString str =
     case String.toLower (String.left 2 str) of
         "es" ->
             Spanish
@@ -159,8 +159,8 @@ languageFromString str =
             English
 
 
-languageToString : Language -> String
-languageToString language =
+toString : Language -> String
+toString language =
     case language of
         English ->
             "en"
