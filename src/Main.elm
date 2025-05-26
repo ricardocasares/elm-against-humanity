@@ -315,7 +315,7 @@ update msg model =
             ( { model | currentLanguage = detected, i18n = T.translate detected }, getDeck model.basePath detected )
 
         LanguageChanged language ->
-            ( { model | currentLanguage = language }
+            ( { model | currentLanguage = language, i18n = T.translate language }
             , Cmd.batch
                 [ getDeck model.basePath language
                 , IO.fromElm (IO.SaveLanguagePreference (T.languageToString language))
