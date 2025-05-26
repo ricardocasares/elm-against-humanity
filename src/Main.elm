@@ -656,8 +656,6 @@ helpScreen model =
                     , div [ class "text-base leading-relaxed" ] [ text t.newRoundStarts ]
                     ]
                 ]
-            , div [ class "divider" ] []
-            , h4 [ class "text-xl font-semibold" ] [ text t.scoring ]
             ]
         ]
 

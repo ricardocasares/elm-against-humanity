@@ -31,7 +31,6 @@ type alias Translations =
     , gameOverview : String
     , playerRoles : String
     , gameplaySteps : String
-    , scoring : String
     , czarRole : String
     , czarReadsCard : String
     , playersSelectCards : String
@@ -76,7 +75,6 @@ englishTranslations =
     , gameOverview = "Elm Against Humanity is a party game where players combine cards to create funny or outrageous combinations."
     , playerRoles = "Player Roles"
     , gameplaySteps = "How to Play"
-    , scoring = "Scoring"
     , czarRole = "One player is the Card Czar (this role rotates each round)."
     , czarReadsCard = "The Card Czar reads a black card aloud to all players."
     , playersSelectCards = "All other players select one white card from their hand by tapping on it."
@@ -106,7 +104,6 @@ spanishTranslations =
     , gameOverview = "Elm Against Humanity es un juego de fiesta donde los jugadores combinan cartas para crear combinaciones divertidas o escandalosas."
     , playerRoles = "Roles de Jugador"
     , gameplaySteps = "Cómo Jugar"
-    , scoring = "Puntuación"
     , czarRole = "Un jugador es el Zar de Cartas (este rol rota cada ronda)."
     , czarReadsCard = "El Zar de Cartas lee una carta negra en voz alta a todos los jugadores."
     , playersSelectCards = "Todos los demás jugadores seleccionan una carta blanca de su mano tocándola."
@@ -136,7 +133,6 @@ polishTranslations =
     , gameOverview = "Elm Against Humanity to gra imprezowa, w której gracze łączą karty, aby tworzyć zabawne lub skandaliczne kombinacje."
     , playerRoles = "Role Graczy"
     , gameplaySteps = "Jak Grać"
-    , scoring = "Punktacja"
     , czarRole = "Jeden gracz to Car Kart (ta rola rotuje co rundę)."
     , czarReadsCard = "Car Kart czyta czarną kartę na głos wszystkim graczom."
     , playersSelectCards = "Wszyscy pozostali gracze wybierają jedną białą kartę z ręki, dotykając jej."

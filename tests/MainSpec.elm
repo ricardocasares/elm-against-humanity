@@ -166,9 +166,4 @@ suite =
                 view { testModel | route = Help, state = Loaded }
                     |> Query.fromHtml
                     |> Query.has [ text "How to Play" ]
-        , test "Help page displays scoring information" <|
-            \_ ->
-                view { testModel | route = Help, state = Loaded }
-                    |> Query.fromHtml
-                    |> Query.has [ text "Scoring" ]
         ]
