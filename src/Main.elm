@@ -469,12 +469,12 @@ randomize data =
 -}
 loadingSkeleton : Html Msg
 loadingSkeleton =
-    card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-4" ]
-        [ div [ class "skeleton h-4 w-full" ] []
-        , div [ class "skeleton h-4 w-full" ] []
-        , div [ class "skeleton h-4 w-full" ] []
-        , div [ class "skeleton h-4 w-full" ] []
-        , div [ class "skeleton h-4 w-32" ] []
+    card [ class "bg-black rounded-box flex-1 w-full flex flex-col gap-6" ]
+        [ div [ class "skeleton h-8 w-full" ] []
+        , div [ class "skeleton h-8 w-full" ] []
+        , div [ class "skeleton h-8 w-full" ] []
+        , div [ class "skeleton h-8 w-full" ] []
+        , div [ class "skeleton h-8 w-32" ] []
         ]
 
 
