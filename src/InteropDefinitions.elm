@@ -69,7 +69,7 @@ type FromElm
     | WakeLockAcquire
     | WakeLockRelease
     | DetectLanguage
-    | SaveLanguagePreference String
+    | SaveLanguage String
 
 
 fromElm : Codec FromElm
@@ -89,12 +89,12 @@ fromElm =
                 DetectLanguage ->
                     vDetectLanguage
 
-                SaveLanguagePreference lang ->
+                SaveLanguage lang ->
                     vSaveLanguagePreference lang
         )
         |> Codec.variant0 "WakeLockCheck" WakeLockCheck
         |> Codec.variant0 "WakeLockAcquire" WakeLockAcquire
         |> Codec.variant0 "WakeLockRelease" WakeLockRelease
         |> Codec.variant0 "DetectLanguage" DetectLanguage
-        |> Codec.namedVariant1 "SaveLanguagePreference" SaveLanguagePreference ( "language", Codec.string )
+        |> Codec.namedVariant1 "SaveLanguage" SaveLanguage ( "lang", Codec.string )
         |> Codec.buildCustom

@@ -1,5 +1,5 @@
 import { Elm } from "./Main.elm";
-import { match } from "ts-pattern";
+import { match, P } from "ts-pattern";
 
 const basePath = import.meta.env.BASE_URL!.replace(
   /^\/(?!$)(.*?)(\/?)$/,
@@ -21,9 +21,7 @@ app.ports.interopFromElm.subscribe((msg) =>
     .with({ tag: "WakeLockAcquire" }, wakeLockAcquire)
     .with({ tag: "WakeLockRelease" }, wakeLockRelease)
     .with({ tag: "DetectLanguage" }, detectLanguage)
-    .with({ tag: "SaveLanguagePreference" }, ({ language }) =>
-      saveLanguagePreference(language)
-    )
+    .with({ tag: "SaveLanguage" }, ({ lang }) => saveLang(lang))
     .exhaustive()
 );
 
@@ -47,9 +45,8 @@ const wakeLockAcquire = () =>
 const wakeLockRelease = () =>
   navigator.wakeLock
     .request("screen")
-    .then((lock) =>
-      lock.release().then(() => send({ tag: "WakeLockReleased" }))
-    )
+    .then((lock) => lock.release())
+    .then(() => send({ tag: "WakeLockReleased" }))
     .catch((err) =>
       send({
         tag: "WakeLockError",
@@ -58,19 +55,10 @@ const wakeLockRelease = () =>
     );
 
 const detectLanguage = () => {
-  // Check localStorage first for saved preference
-  const savedLanguage = localStorage.getItem("humanity-language");
-  if (savedLanguage) {
-    send({ tag: "LanguageDetected", language: savedLanguage });
-    return;
-  }
-
-  // Otherwise detect from navigator.language
-  const browserLanguage =
-    navigator.language || navigator.languages?.[0] || "en";
-  send({ tag: "LanguageDetected", language: browserLanguage });
+  const language = localStorage.getItem("lang") || navigator.language || "en";
+  send({ tag: "LanguageDetected", language });
 };
 
-const saveLanguagePreference = (language: string) => {
-  localStorage.setItem("humanity-language", language);
+const saveLang = (lang: string) => {
+  localStorage.setItem("lang", lang);
 };

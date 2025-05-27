@@ -21,7 +21,7 @@ export interface ElmApp {
   };
 }
 
-export type FromElm = { language : string; tag : "SaveLanguagePreference" } | { tag : "DetectLanguage" } | { tag : "WakeLockRelease" } | { tag : "WakeLockAcquire" } | { tag : "WakeLockCheck" };
+export type FromElm = { lang : string; tag : "SaveLanguage" } | { tag : "DetectLanguage" } | { tag : "WakeLockRelease" } | { tag : "WakeLockAcquire" } | { tag : "WakeLockCheck" };
 
 export type ToElm = { language : string; tag : "LanguageDetected" } | { error : string; tag : "WakeLockError" } | { tag : "WakeLockReleased" } | { tag : "WakeLockAcquired" } | { tag : "WakeLockAvailable" };
 
