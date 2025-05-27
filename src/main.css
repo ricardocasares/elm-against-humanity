@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @plugin "daisyui" {
     themes: dracula --default;
+    include: tab, card, toggle, range, badge, divider, button, select;
 }
 
 @theme {
