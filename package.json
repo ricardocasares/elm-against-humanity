@@ -18,12 +18,12 @@
     "compile": "elm make src/Main.elm --output=/dev/null"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.6",
-    "daisyui": "^5.0.35",
+    "@tailwindcss/vite": "^4.1.11",
+    "daisyui": "^5.0.46",
     "elm-review": "^2.13.2",
     "elm-tooling": "^1.15.1",
     "elm-ts-interop": "^0.0.8",
-    "tailwindcss": "^4.1.6",
+    "tailwindcss": "^4.1.11",
     "vite": "^5.1.2",
     "vite-plugin-elm": "^3.0.1",
     "vite-plugin-mkcert": "^1.17.8"
