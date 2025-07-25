@@ -448,6 +448,9 @@ getDeck basePath language =
 
                 T.Polish ->
                     "deck-pl.json"
+
+                T.Chinese ->
+                    "deck-zh.json"
     in
     Http.get
         { url = basePath ++ deckFile

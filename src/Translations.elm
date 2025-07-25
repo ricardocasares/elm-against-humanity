@@ -5,6 +5,7 @@ type Language
     = English
     | Spanish
     | Polish
+    | Chinese
 
 
 type alias Translations =
@@ -57,6 +58,9 @@ translate language =
 
         Polish ->
             polish
+
+        Chinese ->
+            chinese
 
 
 english : Translations
@@ -146,6 +150,35 @@ polish =
     }
 
 
+chinese : Translations
+chinese =
+    { settings = "设置"
+    , whiteCards = "白卡"
+    , blackCards = "黑卡"
+    , help = "帮助"
+    , selectLanguage = "语言"
+    , preventScreenDimming = "防止屏幕变暗"
+    , reset = "重置"
+    , add = "添加"
+    , previous = "上一个"
+    , next = "下一个"
+    , howToPlay = "游戏方法"
+    , gameOverview = "Elm Against Humanity 是一个聚会游戏，玩家通过组合卡片来创造有趣或令人发指的组合。"
+    , playerRoles = "玩家角色"
+    , gameplaySteps = "游戏方法"
+    , czarRole = "一名玩家担任卡片皇帝（此角色每轮轮换）。"
+    , czarReadsCard = "卡片皇帝向所有玩家大声读出一张黑卡。"
+    , playersSelectCards = "所有其他玩家通过点击从手中选择一张白卡。"
+    , playersGivePhones = "玩家将手机交给卡片皇帝，以便他们可以看到所有选中的白卡。"
+    , czarPicksBest = "卡片皇帝根据自己的意见选择最佳的白卡组合。"
+    , pointAwarded = "提交被选中白卡的玩家获得一分。"
+    , newRoundStarts = "新一轮开始，下一名玩家成为卡片皇帝。"
+    , noWhiteCardsLoaded = "未加载白卡"
+    , noBlackCardsLoaded = "未加载黑卡"
+    , error = "加载牌组时发生错误。"
+    }
+
+
 fromString : String -> Language
 fromString str =
     case String.toLower (String.left 2 str) of
@@ -154,6 +187,9 @@ fromString str =
 
         "pl" ->
             Polish
+
+        "zh" ->
+            Chinese
 
         _ ->
             English
@@ -170,3 +206,6 @@ toString language =
 
         Polish ->
             "pl"
+
+        Chinese ->
+            "zh"
