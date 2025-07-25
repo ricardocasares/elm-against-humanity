@@ -720,6 +720,9 @@ languageSelector currentLanguage =
 
                     "pl" ->
                         LanguageChanged T.Polish
+                    
+                    "zh" ->
+                        LanguageChanged T.Chinese
 
                     _ ->
                         NoOp
@@ -740,6 +743,11 @@ languageSelector currentLanguage =
             , A.selected (currentLanguage == T.Polish)
             ]
             [ text "Polski" ]
+        , Html.option
+            [ A.value "zh"
+            , A.selected (currentLanguage == T.Chinese)
+            ]
+            [ text "Chinese" ]
         ]
 
 
