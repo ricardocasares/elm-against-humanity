@@ -10,6 +10,7 @@ This codebase uses Elm, a pure functional language.
 - Run `bun compile` on the @terminal to check for Elm compiler errors
 - Run `bun lint` on the @terminal for linting Elm files and fix errors
 - Run `bun run test` on the @terminal for testing your changes
+- Run `bun interop` to generate TypeScript definitions for Elm ports
 - Use Elm v0.19.1 when generating Elm code
 - Minimize usage of external dependencies
 - Check the #problems tab to resolve issues
