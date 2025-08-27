@@ -451,6 +451,9 @@ getDeck basePath language =
 
                 T.Chinese ->
                     "deck-zh.json"
+
+                T.Italian ->
+                    "deck-it.json"
     in
     Http.get
         { url = basePath ++ deckFile
@@ -720,9 +723,12 @@ languageSelector currentLanguage =
 
                     "pl" ->
                         LanguageChanged T.Polish
-                    
+
                     "zh" ->
                         LanguageChanged T.Chinese
+
+                    "it" ->
+                        LanguageChanged T.Italian
 
                     _ ->
                         NoOp
@@ -748,6 +754,11 @@ languageSelector currentLanguage =
             , A.selected (currentLanguage == T.Chinese)
             ]
             [ text "Chinese" ]
+        , Html.option
+            [ A.value "it"
+            , A.selected (currentLanguage == T.Italian)
+            ]
+            [ text "Italiano" ]
         ]
 
 

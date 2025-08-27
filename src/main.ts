@@ -3,7 +3,7 @@ import { match, P } from "ts-pattern";
 
 const basePath = import.meta.env.BASE_URL!.replace(
   /^\/(?!$)(.*?)(\/?)$/,
-  "/$1/"
+  "/$1/",
 );
 
 export const node = document.getElementById("app");
@@ -16,13 +16,13 @@ export const app = Elm.Main.init({
 const send = app.ports.interopToElm.send;
 
 app.ports.interopFromElm.subscribe((msg) =>
-  match<Elm.FromElm>(msg)
+  match(msg)
     .with({ tag: "WakeLockCheck" }, wakeLockCheck)
     .with({ tag: "WakeLockAcquire" }, wakeLockAcquire)
     .with({ tag: "WakeLockRelease" }, wakeLockRelease)
     .with({ tag: "DetectLanguage" }, detectLanguage)
     .with({ tag: "SaveLanguage" }, ({ lang }) => saveLang(lang))
-    .exhaustive()
+    .exhaustive(),
 );
 
 const wakeLockCheck = () =>
@@ -39,7 +39,7 @@ const wakeLockAcquire = () =>
       send({
         tag: "WakeLockError",
         error: String(err?.message || err),
-      })
+      }),
     );
 
 const wakeLockRelease = () =>
@@ -51,7 +51,7 @@ const wakeLockRelease = () =>
       send({
         tag: "WakeLockError",
         error: String(err?.message || err),
-      })
+      }),
     );
 
 const detectLanguage = () => {

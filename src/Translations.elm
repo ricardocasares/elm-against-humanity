@@ -6,6 +6,7 @@ type Language
     | Spanish
     | Polish
     | Chinese
+    | Italian
 
 
 type alias Translations =
@@ -61,6 +62,9 @@ translate language =
 
         Chinese ->
             chinese
+
+        Italian ->
+            italian
 
 
 english : Translations
@@ -179,6 +183,35 @@ chinese =
     }
 
 
+italian : Translations
+italian =
+    { settings = "Impostazioni"
+    , whiteCards = "Carte Bianche"
+    , blackCards = "Carte Nere"
+    , help = "Aiuto"
+    , selectLanguage = "Lingua"
+    , preventScreenDimming = "Impedisci il buio dello schermo"
+    , reset = "Ripristina"
+    , add = "Aggiungi"
+    , previous = "Precedente"
+    , next = "Successivo"
+    , howToPlay = "Come Giocare"
+    , gameOverview = "Elm Against Humanity è un gioco di festa dove i giocatori combinano carte per creare combinazioni divertenti o scandalose."
+    , playerRoles = "Ruoli dei Giocatori"
+    , gameplaySteps = "Come Giocare"
+    , czarRole = "Un giocatore è il Czar delle Carte (questo ruolo cambia ogni round)."
+    , czarReadsCard = "Il Czar delle Carte legge ad alta voce una carta nera a tutti i giocatori."
+    , playersSelectCards = "Tutti gli altri giocatori selezionano una carta bianca dalla propria mano toccandola."
+    , playersGivePhones = "I giocatori consegnano i loro telefoni al Czar delle Carte in modo che possano vedere tutte le carte bianche selezionate."
+    , czarPicksBest = "Il Czar delle Carte sceglie la miglior combinazione di carte bianche secondo la sua opinione."
+    , pointAwarded = "Il giocatore che ha inviato la carta bianca scelta ottiene un punto."
+    , newRoundStarts = "Un nuovo round inizia con il prossimo giocatore che diventa il Czar delle Carte."
+    , noWhiteCardsLoaded = "Nessuna carta bianca caricata"
+    , noBlackCardsLoaded = "Nessuna carta nera caricata"
+    , error = "Si è verificato un errore durante il caricamento del mazzo."
+    }
+
+
 fromString : String -> Language
 fromString str =
     case String.toLower (String.left 2 str) of
@@ -190,6 +223,9 @@ fromString str =
 
         "zh" ->
             Chinese
+
+        "it" ->
+            Italian
 
         _ ->
             English
@@ -209,3 +245,6 @@ toString language =
 
         Chinese ->
             "zh"
+
+        Italian ->
+            "it"
